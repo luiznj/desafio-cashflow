@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/gateway/">
+    <Project Path="gateway/CashFlow.Gateway/CashFlow.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/services/" />
+  <Folder Name="/services/consolidation/">
+    <Project Path="services/consolidation/CashFlow.Consolidation.Api/CashFlow.Consolidation.Api.csproj" />
+  </Folder>
+  <Folder Name="/services/identity/">
+    <Project Path="services/identity/CashFlow.Identity.Api/CashFlow.Identity.Api.csproj" />
+  </Folder>
+  <Folder Name="/services/transaction/">
+    <Project Path="services/transaction/CashFlow.Transaction.Api/CashFlow.Transaction.Api.csproj" />
+  </Folder>
+  <Folder Name="/shared/">
+    <Project Path="shared/CashFlow.Shared/CashFlow.Shared.csproj" />
+  </Folder>
+</Solution>
