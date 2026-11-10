@@ -18,3 +18,7 @@ Um comerciante precisa controlar o seu fluxo de caixa diário com os lançamento
 - Readme com instruções claras de como a aplicação funciona, e como rodar localmente
 - Hospedar em repositório publico (GitHub)
 - Todas as documentações de projeto devem estar no repositório
+
+## Arquitetura
+
+As decisões arquiteturais estou descritas no arquivo [architecture.md](./docs/architecture.md)
