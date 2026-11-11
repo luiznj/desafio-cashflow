@@ -87,3 +87,23 @@ teste será descartado.
 O serviço de controle de lançamento não deve ficar indisponível se o sistema de
 consolidado diário cair. Em dias de picos, o serviço de consolidado diário recebe
 50 requisições por segundo, com no máximo 5% de perda de requisições.
+
+## Objetivo do Desafio
+
+Desenvolver uma arquitetura de software escalável e resiliente, garantindo alta
+disponibilidade, segurança e desempenho. Isso inclui a seleção adequada de
+padrões arquiteturais, integração de tecnologias e frameworks, além de otimiza-
+ção de requisitos não-funcionais. Deve abranger aspectos importantes, como
+design, integração, segurança e desempenho.
+- Escalabilidade: Garanta que a arquitetura possa lidar com o aumento  carga de trabalho sem degradação significativa do desempenho. Con-
+sidere dimensionamento horizontal, balanceamento de carga e estratégias
+de cache.
+- Resiliência: Projete para a recuperação de falhas. Isso inclui redundân- a, failover, monitoramento proativo e estratégias de recuperação.
+- Segurança: Proteja os dados e sistemas contra ameaças. Implemente tenticação, autorização, criptografia e mecanismos de proteção contra
+ataques.
+- Padrões Arquiteturais: Escolha padrões adequados, como mi-
+crosserviços, monolitos, SOA ou serverless. Considere  de-offs entre
+simplicidade e flexibilidade.
+- Integração: Defina como os componentes se comunicarão. Avalie proto- los, formatos de mensagem e ferramentas de integração.
+- Requisitos Não-Funcionais: Otimize para desempenho, disponibili- de e confiabilidade. Defina métricas e metas claras.
+- Documentação: Registre decisões arquiteturais, diagramas e fluxos de dados. Isso facilita a comunicação e a manutenção

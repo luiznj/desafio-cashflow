@@ -1,0 +1,71 @@
+using CashFlow.Identity.Api.Dtos;
+using CashFlow.Identity.Db.Models;
+using CashFlow.Identity.Db.Repositories;
+
+namespace CashFlow.Identity.Api.Services;
+
+public class AuthService(
+    IUserRepository userRepository,
+    IUserSessionRepository sessionRepository,
+    ITokenService tokenService,
+    IConfiguration configuration) : IAuthService
+{
+    public async Task<AuthResponse> SignUpAsync(SignUpRequest request)
+    {
+        var existing = await userRepository.FindByEmailAsync(request.Email);
+        if (existing is not null)
+            throw new DuplicateEmailException();
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = request.Email.ToLowerInvariant(),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await userRepository.AddAsync(user);
+        return await IssueTokensAsync(user);
+    }
+
+    public async Task<AuthResponse> SignInAsync(SignInRequest request)
+    {
+        var user = await userRepository.FindByEmailAsync(request.Email.ToLowerInvariant());
+
+        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            throw new InvalidCredentialsException();
+
+        return await IssueTokensAsync(user);
+    }
+
+    public async Task<AuthResponse> RefreshAsync(string refreshToken)
+    {
+        var session = await sessionRepository.FindByTokenAsync(refreshToken)
+            ?? throw new InvalidRefreshTokenException();
+
+        var user = await userRepository.FindByIdAsync(session.UserId)
+            ?? throw new InvalidRefreshTokenException();
+
+        await sessionRepository.RevokeAsync(session.Id);
+
+        return await IssueTokensAsync(user);
+    }
+
+    public async Task SignOutAsync(string refreshToken)
+    {
+        var session = await sessionRepository.FindByTokenAsync(refreshToken);
+        if (session is null) return;
+
+        await sessionRepository.RevokeAsync(session.Id);
+    }
+
+    private async Task<AuthResponse> IssueTokensAsync(User user)
+    {
+        var accessToken = tokenService.GenerateAccessToken(user);
+        var expiresInDays = configuration.GetValue<int>("Jwt:RefreshTokenExpiresInDays", 7);
+        var expiresInMinutes = configuration.GetValue<int>("Jwt:AccessTokenExpiresInMinutes", 15);
+        var session = await sessionRepository.CreateAsync(user.Id, expiresInDays);
+
+        return new AuthResponse(accessToken, session.RefreshToken, DateTime.UtcNow.AddMinutes(expiresInMinutes));
+    }
+}

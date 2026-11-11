@@ -1,11 +1,19 @@
+using CashFlow.Identity.Api.Services;
+using CashFlow.Identity.Api.Validators;
 using CashFlow.Identity.Db.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddIdentityDb(builder.Configuration.GetConnectionString("Default")!);
+
+// Token service criado como singleton: carrega/gera o par RSA uma única vez
+var tokenService = new RsaTokenService(builder.Configuration);
+builder.Services.AddSingleton<ITokenService>(tokenService);
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<SignUpRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -18,8 +26,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            IssuerSigningKey = tokenService.GetPublicSecurityKey()
         };
     });
 
