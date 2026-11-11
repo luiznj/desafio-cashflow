@@ -1,15 +1,13 @@
 using CashFlow.Consolidation.Api.Messaging;
-using CashFlow.Consolidation.Db.Data;
+using CashFlow.Consolidation.Db.Extensions;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<ConsolidationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddConsolidationDb(builder.Configuration.GetConnectionString("Default")!);
 
 builder.Services.AddMassTransit(x =>
 {

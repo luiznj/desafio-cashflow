@@ -1,13 +1,11 @@
-using CashFlow.Identity.Db.Data;
+using CashFlow.Identity.Db.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<IdentityDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddIdentityDb(builder.Configuration.GetConnectionString("Default")!);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

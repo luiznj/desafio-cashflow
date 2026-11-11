@@ -1,34 +1,19 @@
-using CashFlow.Consolidation.Db.Data;
-using CashFlow.Consolidation.Db.Models;
+using CashFlow.Consolidation.Db.Repositories;
 using CashFlow.Shared.Messaging;
 using MassTransit;
-using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Consolidation.Api.Messaging;
 
-public class TransactionCreatedConsumer(ConsolidationDbContext db) : IConsumer<TransactionCreatedEvent>
+public class TransactionCreatedConsumer(IDailyBalanceRepository repository) : IConsumer<TransactionCreatedEvent>
 {
     public async Task Consume(ConsumeContext<TransactionCreatedEvent> context)
     {
         var evt = context.Message;
         var date = DateOnly.FromDateTime(evt.OccurredAt);
 
-        var balance = await db.DailyBalances
-            .FirstOrDefaultAsync(b => b.UserId == evt.UserId && b.Date == date);
-
-        if (balance is null)
-        {
-            balance = new DailyBalance { UserId = evt.UserId, Date = date };
-            db.DailyBalances.Add(balance);
-        }
-
         if (evt.Type == "Credit")
-            balance.TotalCredits += evt.Amount;
+            await repository.ApplyCreditAsync(evt.UserId, date, evt.Amount);
         else
-            balance.TotalDebits += evt.Amount;
-
-        balance.UpdatedAt = DateTime.UtcNow;
-
-        await db.SaveChangesAsync();
+            await repository.ApplyDebitAsync(evt.UserId, date, evt.Amount);
     }
 }

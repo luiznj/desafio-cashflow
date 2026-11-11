@@ -1,14 +1,12 @@
-using CashFlow.Transaction.Db.Data;
+using CashFlow.Transaction.Db.Extensions;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<TransactionDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddTransactionDb(builder.Configuration.GetConnectionString("Default")!);
 
 builder.Services.AddMassTransit(x =>
 {
