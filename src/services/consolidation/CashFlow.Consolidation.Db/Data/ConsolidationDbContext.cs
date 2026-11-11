@@ -1,7 +1,7 @@
-using CashFlow.Consolidation.Api.Models;
+using CashFlow.Consolidation.Db.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace CashFlow.Consolidation.Api.Data;
+namespace CashFlow.Consolidation.Db.Data;
 
 public class ConsolidationDbContext(DbContextOptions<ConsolidationDbContext> options) : DbContext(options)
 {

@@ -2,13 +2,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\CashFlow.Shared\CashFlow.Shared.csproj" />
+    <ProjectReference Include="..\CashFlow.Consolidation.Db\CashFlow.Consolidation.Db.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MassTransit.RabbitMQ" Version="8.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 
   <PropertyGroup>

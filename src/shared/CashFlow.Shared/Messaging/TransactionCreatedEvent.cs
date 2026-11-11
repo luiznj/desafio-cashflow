@@ -1,4 +1,4 @@
-namespace CashFlow.Transaction.Api.Messaging;
+namespace CashFlow.Shared.Messaging;
 
 public record TransactionCreatedEvent(
     Guid TransactionId,

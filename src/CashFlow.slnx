@@ -5,12 +5,15 @@
   <Folder Name="/services/" />
   <Folder Name="/services/consolidation/">
     <Project Path="services/consolidation/CashFlow.Consolidation.Api/CashFlow.Consolidation.Api.csproj" />
+    <Project Path="services/consolidation/CashFlow.Consolidation.Db/CashFlow.Consolidation.Db.csproj" />
   </Folder>
   <Folder Name="/services/identity/">
     <Project Path="services/identity/CashFlow.Identity.Api/CashFlow.Identity.Api.csproj" />
+    <Project Path="services/identity/CashFlow.Identity.Db/CashFlow.Identity.Db.csproj" />
   </Folder>
   <Folder Name="/services/transaction/">
     <Project Path="services/transaction/CashFlow.Transaction.Api/CashFlow.Transaction.Api.csproj" />
+    <Project Path="services/transaction/CashFlow.Transaction.Db/CashFlow.Transaction.Db.csproj" />
   </Folder>
   <Folder Name="/shared/">
     <Project Path="shared/CashFlow.Shared/CashFlow.Shared.csproj" />

@@ -2,12 +2,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\CashFlow.Shared\CashFlow.Shared.csproj" />
+    <ProjectReference Include="..\CashFlow.Identity.Db\CashFlow.Identity.Db.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
 
-namespace CashFlow.Transaction.Api.Data;
+namespace CashFlow.Transaction.Db.Data;
 
 public class TransactionDbContext(DbContextOptions<TransactionDbContext> options) : DbContext(options)
 {
-    public DbSet<Models.Transaction> Transactions => Set<Models.Transaction>();
+    public DbSet<TransactionEntry> Transactions => Set<TransactionEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

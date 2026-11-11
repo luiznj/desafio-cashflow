@@ -1,16 +1,10 @@
-using CashFlow.Consolidation.Api.Data;
-using CashFlow.Consolidation.Api.Models;
+using CashFlow.Consolidation.Db.Data;
+using CashFlow.Consolidation.Db.Models;
+using CashFlow.Shared.Messaging;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 namespace CashFlow.Consolidation.Api.Messaging;
-
-public record TransactionCreatedEvent(
-    Guid TransactionId,
-    Guid UserId,
-    decimal Amount,
-    string Type,
-    DateTime OccurredAt);
 
 public class TransactionCreatedConsumer(ConsolidationDbContext db) : IConsumer<TransactionCreatedEvent>
 {

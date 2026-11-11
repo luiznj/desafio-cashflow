@@ -1,5 +1,5 @@
-using CashFlow.Consolidation.Api.Data;
 using CashFlow.Consolidation.Api.Messaging;
+using CashFlow.Consolidation.Db.Data;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;

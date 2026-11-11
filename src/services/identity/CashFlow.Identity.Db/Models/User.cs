@@ -1,4 +1,4 @@
-namespace CashFlow.Identity.Api.Models;
+namespace CashFlow.Identity.Db.Models;
 
 public class User
 {

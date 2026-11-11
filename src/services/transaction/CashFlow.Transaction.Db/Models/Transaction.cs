@@ -1,4 +1,4 @@
-namespace CashFlow.Transaction.Api.Models;
+namespace CashFlow.Transaction.Db.Models;
 
 public class Transaction
 {

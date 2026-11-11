@@ -1,4 +1,4 @@
-namespace CashFlow.Consolidation.Api.Models;
+namespace CashFlow.Consolidation.Db.Models;
 
 public class DailyBalance
 {
