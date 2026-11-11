@@ -28,7 +28,10 @@ public class TransactionsController(ITransactionService service, CreateTransacti
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var (transaction, isNew) = await service.CreateAsync(userId, request, keyHeader!);
 
-        return isNew ? Created(string.Empty, transaction) : Ok(transaction);
+        if (!isNew)
+            return Conflict(new { message = $"A chave de idempotência '{keyHeader}' já foi utilizada. Cada operação deve ter uma 'Idempotency-Key' única." });
+
+        return Created(string.Empty, transaction);
     }
 
     [HttpGet]

@@ -239,7 +239,15 @@ curl -X POST http://localhost:5000/api/v1/transactions \
   }'
 ```
 
-**Esperado (200 OK):** Retorna a transação anterior (sem duplicar).
+**Esperado (409 Conflict):**
+
+```json
+{
+  "message": "A chave de idempotência '...' já foi utilizada. Cada operação deve ter uma 'Idempotency-Key' única."
+}
+```
+
+> A requisição é rejeitada — nenhuma transação duplicada é criada. Use um novo UUID para criar outra transação.
 
 ---
 

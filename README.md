@@ -168,7 +168,7 @@ curl "http://localhost:5000/api/v1/balances?date=2026-11-11" \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
-> O header `Idempotency-Key` é obrigatório na criação de transações. Use um UUID v4 único por operação. Se a requisição for repetida com a mesma chave, o servidor retorna a transação já criada (HTTP 200) em vez de duplicá-la.
+> O header `Idempotency-Key` é obrigatório na criação de transações. Use um UUID v4 único por operação. Se a requisição for repetida com a mesma chave, o servidor retorna **409 Conflict** com uma mensagem de erro — a operação é rejeitada sem duplicar a transação.
 
 ### 6. Endpoints principais
 
