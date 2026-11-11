@@ -7,7 +7,8 @@ public class Transaction
     public decimal Amount { get; set; }
     public TransactionType Type { get; set; }
     public string Description { get; set; } = string.Empty;
-    public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+    public string IdempotencyKey { get; set; } = string.Empty;
+    public DateTime OccurredAt { get; set; }
 }
 
 public enum TransactionType { Credit, Debit }

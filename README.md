@@ -164,12 +164,14 @@ Incluir o token JWT no header `Authorization` de todas as requisições:
 curl -X POST http://localhost:5002/api/v1/transactions \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 3fa85f64-5717-4562-b3fc-2c963f66afa6" \
   -d '{
     "type": "Credit",
-    "amount": 100.50,
-    "description": "Venda do dia"
+    "amount": 100.50
   }'
 ```
+
+> O header `Idempotency-Key` é obrigatório na criação de transações. Use um UUID v4 único por operação. Se a requisição for repetida com a mesma chave, o servidor retorna a transação já criada (HTTP 200) em vez de duplicá-la.
 
 ### 6. Endpoints principais
 

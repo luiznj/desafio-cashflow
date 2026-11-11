@@ -20,7 +20,7 @@ paths:
 
 ## Padrões de Código e Arquitetura .NET
 
-- **Idempotência Obrigatória:** Toda requisição de inserção de transação deve exigir um `Idempotency-Key` (Guid) no cabeçalho ou no payload para evitar duplicidade por timeout de rede.
+- **Idempotência Obrigatória:** Toda requisição de inserção de transação deve exigir um `Idempotency-Key` (Guid) no **header HTTP** para evitar duplicidade por timeout de rede. Exemplo: `Idempotency-Key: 3fa85f64-5717-4562-b3fc-2c963f66afa6`.
 - **Eventos:** Após a inserção bem-sucedida de uma transação, disparar obrigatoriamente um evento de domínio (ex: `TransactionCreatedEvent`) para que o microsserviço de `consolidation` possa processar o saldo posteriormente.
 - **Tipos de Transação:** Utilizar um `enum` estrito para definir os tipos permitidos (ex: `TransactionType.Debit`, `TransactionType.Credit`).
 
@@ -34,13 +34,16 @@ paths:
 ### Create Transaction
 
 - Somente usuários autenticados podem ter acesso à este endpoint
-- Deve receber o como parametro no body
-  - O valor absoluto da transação
-  - O tipo da transação, se é `Credit` ou `Debit`
+- Deve receber no **header**:
+  - `Idempotency-Key` (Guid, obrigatório) — evita duplicidade em caso de retry
+- Deve receber no **body**:
+  - O valor absoluto da transação (`amount`)
+  - O tipo da transação, se é `Credit` ou `Debit` (`type`)
 - Deve validar a entrada e retornar o erro apropriado com o código HTTP e uma mensagem explicativa
 - Recuperar o UserId do JWT
+- Verificar se já existe uma transação com o mesmo `Idempotency-Key` para o usuário; se sim, retornar 200 com a transação já criada (idempotência)
 - Chamar a rotina de criação de transação correspondente ao tipo informado
-- Retornar Http 201 em caso de sucesso
+- Retornar Http 201 em caso de sucesso (primeira inserção)
 - Em caso de falha, deve-se retornar o erro http correspondente
 
 ### Get Transactions

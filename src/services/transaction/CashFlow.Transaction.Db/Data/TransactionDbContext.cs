@@ -10,5 +10,8 @@ public class TransactionDbContext(DbContextOptions<TransactionDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("transaction");
+        modelBuilder.Entity<TransactionEntry>()
+            .HasIndex(t => t.IdempotencyKey)
+            .IsUnique();
     }
 }
