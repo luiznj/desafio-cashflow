@@ -115,12 +115,12 @@ dotnet run --project src/gateway/CashFlow.Gateway
 
 ### 4. Fluxo de autenticação
 
-Todo acesso aos serviços de transações e consolidação requer um token JWT válido.
+Todo acesso passa pelo **API Gateway** (porta 5000). Os exemplos abaixo usam o Gateway como ponto de entrada.
 
 #### a) Criar usuário (Sign-Up)
 
 ```bash
-curl -X POST http://localhost:5001/api/v1/auth/sign-up \
+curl -X POST http://localhost:5000/api/v1/auth/sign-up \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -140,7 +140,7 @@ curl -X POST http://localhost:5001/api/v1/auth/sign-up \
 #### b) Autenticar usuário (Sign-In)
 
 ```bash
-curl -X POST http://localhost:5001/api/v1/auth/sign-in \
+curl -X POST http://localhost:5000/api/v1/auth/sign-in \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
@@ -148,20 +148,13 @@ curl -X POST http://localhost:5001/api/v1/auth/sign-in \
   }'
 ```
 
-#### c) Obter chave pública (JWKS)
-
-Os demais serviços usam esta rota para validar tokens localmente:
-
-```bash
-curl http://localhost:5001/.well-known/jwks.json
-```
-
 ### 5. Usar o Access Token
 
 Incluir o token JWT no header `Authorization` de todas as requisições:
 
 ```bash
-curl -X POST http://localhost:5002/api/v1/transactions \
+# Criar transação
+curl -X POST http://localhost:5000/api/v1/transactions \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 3fa85f64-5717-4562-b3fc-2c963f66afa6" \
@@ -169,13 +162,19 @@ curl -X POST http://localhost:5002/api/v1/transactions \
     "type": "Credit",
     "amount": 100.50
   }'
+
+# Consultar saldo consolidado
+curl "http://localhost:5000/api/v1/balances?date=2026-11-11" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
 > O header `Idempotency-Key` é obrigatório na criação de transações. Use um UUID v4 único por operação. Se a requisição for repetida com a mesma chave, o servidor retorna a transação já criada (HTTP 200) em vez de duplicá-la.
 
 ### 6. Endpoints principais
 
-#### Identity Service (porta 5001)
+Todos os endpoints são acessados via **API Gateway** em `http://localhost:5000`.
+
+#### Autenticação (público)
 
 | Rota | Método | Descrição |
 |------|--------|-----------|
@@ -183,20 +182,22 @@ curl -X POST http://localhost:5002/api/v1/transactions \
 | `/api/v1/auth/sign-in` | POST | Autenticar usuário |
 | `/api/v1/auth/refresh` | POST | Renovar access token |
 | `/api/v1/auth/sign-out` | POST | Revogar refresh token |
-| `/.well-known/jwks.json` | GET | Obter chave pública (sem autenticação) |
+| `/.well-known/jwks.json` | GET | Chave pública RSA (JWKS) |
 
-#### Transaction Service (porta 5002)
+#### Transações (requer JWT)
 
-| Rota | Método | Descrição | Autenticado |
-|------|--------|-----------|-------------|
-| `/api/v1/transactions` | POST | Criar transação | Sim |
-| `/api/v1/transactions` | GET | Listar transações (filtrado/paginado) | Sim |
+| Rota | Método | Descrição |
+|------|--------|-----------|
+| `/api/v1/transactions` | POST | Criar transação (header `Idempotency-Key` obrigatório) |
+| `/api/v1/transactions` | GET | Listar transações agrupadas por dia (paginado) |
 
-#### Consolidation Service (porta 5003)
+Parâmetros opcionais do GET: `type` (Credit/Debit), `startDate`, `endDate`, `page`, `pageSize`.
 
-| Rota | Método | Descrição | Autenticado |
-|------|--------|-----------|-------------|
-| `/api/v1/balances` | GET | Saldo consolidado por data | Sim |
+#### Consolidação (requer JWT)
+
+| Rota | Método | Descrição |
+|------|--------|-----------|
+| `/api/v1/balances?date=yyyy-MM-dd` | GET | Saldo consolidado de um dia |
 
 ### 7. Validação de senha
 
