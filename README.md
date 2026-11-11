@@ -196,7 +196,7 @@ curl -X POST http://localhost:5002/api/v1/transactions \
 
 | Rota | Método | Descrição | Autenticado |
 |------|--------|-----------|-------------|
-| `/api/balances` | GET | Saldo consolidado por data | Sim |
+| `/api/v1/balances` | GET | Saldo consolidado por data | Sim |
 
 ### 7. Validação de senha
 

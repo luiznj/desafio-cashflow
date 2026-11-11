@@ -51,6 +51,20 @@ namespace CashFlow.Consolidation.Db.Migrations
 
                     b.ToTable("DailyBalances", "consolidation");
                 });
+
+            modelBuilder.Entity("CashFlow.Consolidation.Db.Models.ProcessedTransaction", b =>
+                {
+                    b.Property<Guid>("TransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("TransactionId");
+
+                    b.ToTable("ProcessedTransactions", "consolidation");
+                });
 #pragma warning restore 612, 618
         }
     }

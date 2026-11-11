@@ -6,24 +6,39 @@ namespace CashFlow.Consolidation.Db.Repositories;
 
 public class DailyBalanceRepository(ConsolidationDbContext db) : IDailyBalanceRepository
 {
-    public async Task ApplyCreditAsync(Guid userId, DateOnly date, decimal amount)
+    public async Task ApplyTransactionAsync(Guid transactionId, Guid userId, DateOnly date, decimal signedAmount)
     {
-        var balance = await GetOrCreateAsync(userId, date);
-        balance.TotalCredits += amount;
-        balance.UpdatedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync();
-    }
+        await using var tx = await db.Database.BeginTransactionAsync();
 
-    public async Task ApplyDebitAsync(Guid userId, DateOnly date, decimal amount)
-    {
+        var alreadyProcessed = await db.ProcessedTransactions
+            .AnyAsync(p => p.TransactionId == transactionId);
+
+        if (alreadyProcessed)
+            return; // tx disposed without commit → auto-rollback (no-op)
+
         var balance = await GetOrCreateAsync(userId, date);
-        balance.TotalDebits += amount;
+
+        if (signedAmount > 0)
+            balance.TotalCredits += signedAmount;
+        else
+            balance.TotalDebits += Math.Abs(signedAmount);
+
         balance.UpdatedAt = DateTime.UtcNow;
+
+        db.ProcessedTransactions.Add(new ProcessedTransaction
+        {
+            TransactionId = transactionId,
+            ProcessedAt = DateTime.UtcNow
+        });
+
         await db.SaveChangesAsync();
+        await tx.CommitAsync();
     }
 
     public Task<DailyBalance?> GetByUserAndDateAsync(Guid userId, DateOnly date) =>
-        db.DailyBalances.FirstOrDefaultAsync(b => b.UserId == userId && b.Date == date);
+        db.DailyBalances
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.UserId == userId && b.Date == date);
 
     private async Task<DailyBalance> GetOrCreateAsync(Guid userId, DateOnly date)
     {

@@ -4,7 +4,6 @@ namespace CashFlow.Consolidation.Db.Repositories;
 
 public interface IDailyBalanceRepository
 {
-    Task ApplyCreditAsync(Guid userId, DateOnly date, decimal amount);
-    Task ApplyDebitAsync(Guid userId, DateOnly date, decimal amount);
+    Task ApplyTransactionAsync(Guid transactionId, Guid userId, DateOnly date, decimal signedAmount);
     Task<DailyBalance?> GetByUserAndDateAsync(Guid userId, DateOnly date);
 }

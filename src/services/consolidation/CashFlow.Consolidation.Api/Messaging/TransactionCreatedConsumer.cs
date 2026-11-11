@@ -11,9 +11,7 @@ public class TransactionCreatedConsumer(IDailyBalanceRepository repository) : IC
         var evt = context.Message;
         var date = DateOnly.FromDateTime(evt.OccurredAt);
 
-        if (evt.Type == "Credit")
-            await repository.ApplyCreditAsync(evt.UserId, date, evt.Amount);
-        else
-            await repository.ApplyDebitAsync(evt.UserId, date, evt.Amount);
+        // signedAmount: positive = credit, negative = debit (as stored by Transaction service)
+        await repository.ApplyTransactionAsync(evt.TransactionId, evt.UserId, date, evt.Amount);
     }
 }
