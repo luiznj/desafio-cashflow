@@ -1,13 +1,13 @@
+using System.Text.Json;
 using CashFlow.Shared.Messaging;
 using CashFlow.Transaction.Api.Dtos;
 using CashFlow.Transaction.Db.Models;
 using CashFlow.Transaction.Db.Repositories;
-using MassTransit;
 using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
 
 namespace CashFlow.Transaction.Api.Services;
 
-public class TransactionService(ITransactionRepository repository, IPublishEndpoint publisher, ILogger<TransactionService> logger) : ITransactionService
+public class TransactionService(ITransactionRepository repository, ILogger<TransactionService> logger) : ITransactionService
 {
     public async Task<(TransactionResponse Transaction, bool IsNew)> CreateAsync(Guid userId, CreateTransactionRequest request, string idempotencyKey)
     {
@@ -20,16 +20,18 @@ public class TransactionService(ITransactionRepository repository, IPublishEndpo
 
         var type = Enum.Parse<TransactionType>(request.Type, ignoreCase: true);
 
+        // Stage entity (not saved yet)
         var entry = type == TransactionType.Credit
-            ? await repository.AddCreditAsync(userId, request.Amount, request.Description, idempotencyKey)
-            : await repository.AddDebitAsync(userId, request.Amount, request.Description, idempotencyKey);
+            ? repository.StageCredit(userId, request.Amount, request.Description, idempotencyKey)
+            : repository.StageDebit(userId, request.Amount, request.Description, idempotencyKey);
 
-        await publisher.Publish(new TransactionCreatedEvent(
-            entry.Id,
-            entry.UserId,
-            entry.Amount,
-            entry.Type.ToString(),
-            entry.OccurredAt));
+        var evt = new TransactionCreatedEvent(entry.Id, entry.UserId, entry.Amount, entry.Type.ToString(), entry.OccurredAt);
+
+        // Stage outbox message in the same unit of work
+        repository.StageOutboxMessage(nameof(TransactionCreatedEvent), JsonSerializer.Serialize(evt));
+
+        // Single SaveAsync: persists transaction + outbox message atomically
+        await repository.SaveAsync();
 
         logger.LogInformation("Lançamento criado {TransactionId} | Usuário {UserId} | Tipo {Type} | Valor {Amount}", entry.Id, userId, type, entry.Amount);
         return (Map(entry), IsNew: true);

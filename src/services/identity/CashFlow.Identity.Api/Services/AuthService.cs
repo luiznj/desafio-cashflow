@@ -75,8 +75,8 @@ public class AuthService(
         var accessToken = tokenService.GenerateAccessToken(user);
         var expiresInDays = configuration.GetValue<int>("Jwt:RefreshTokenExpiresInDays", 7);
         var expiresInMinutes = configuration.GetValue<int>("Jwt:AccessTokenExpiresInMinutes", 15);
-        var session = await sessionRepository.CreateAsync(user.Id, expiresInDays);
+        var (_, plainToken) = await sessionRepository.CreateAsync(user.Id, expiresInDays);
 
-        return new AuthResponse(accessToken, session.RefreshToken, DateTime.UtcNow.AddMinutes(expiresInMinutes));
+        return new AuthResponse(accessToken, plainToken, DateTime.UtcNow.AddMinutes(expiresInMinutes));
     }
 }

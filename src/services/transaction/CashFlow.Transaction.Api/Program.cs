@@ -1,4 +1,5 @@
 using CashFlow.Transaction.Api.Services;
+using CashFlow.Transaction.Db.Data;
 using CashFlow.Transaction.Api.Validators;
 using CashFlow.Transaction.Db.Extensions;
 using MassTransit;
@@ -37,6 +38,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<CreateTransactionRequestValidator>();
+builder.Services.AddHostedService<OutboxDeliveryService>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<CashFlow.Transaction.Db.Data.TransactionDbContext>("postgres");

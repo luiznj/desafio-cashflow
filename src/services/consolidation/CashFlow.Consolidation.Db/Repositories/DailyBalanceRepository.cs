@@ -10,28 +10,30 @@ public class DailyBalanceRepository(ConsolidationDbContext db) : IDailyBalanceRe
     {
         await using var tx = await db.Database.BeginTransactionAsync();
 
-        var alreadyProcessed = await db.ProcessedTransactions
-            .AnyAsync(p => p.TransactionId == transactionId);
+        // Idempotency: claim this transaction atomically; if already claimed, skip
+        var claimed = await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO consolidation."ProcessedTransactions" ("TransactionId", "ProcessedAt")
+            VALUES ({transactionId}, {DateTime.UtcNow})
+            ON CONFLICT ("TransactionId") DO NOTHING
+            """);
 
-        if (alreadyProcessed)
-            return; // tx disposed without commit → auto-rollback (no-op)
+        if (claimed == 0)
+            return;
 
-        var balance = await GetOrCreateAsync(userId, date);
+        var credits = signedAmount > 0 ? signedAmount : 0m;
+        var debits = signedAmount < 0 ? Math.Abs(signedAmount) : 0m;
 
-        if (signedAmount > 0)
-            balance.TotalCredits += signedAmount;
-        else
-            balance.TotalDebits += Math.Abs(signedAmount);
+        // Atomic upsert: no lost-update risk even with concurrent messages for the same user/day
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO consolidation."DailyBalances" ("Id", "UserId", "Date", "TotalCredits", "TotalDebits", "UpdatedAt")
+            VALUES ({Guid.NewGuid()}, {userId}, {date}, {credits}, {debits}, {DateTime.UtcNow})
+            ON CONFLICT ("UserId", "Date")
+            DO UPDATE SET
+                "TotalCredits" = consolidation."DailyBalances"."TotalCredits" + EXCLUDED."TotalCredits",
+                "TotalDebits"  = consolidation."DailyBalances"."TotalDebits"  + EXCLUDED."TotalDebits",
+                "UpdatedAt"    = EXCLUDED."UpdatedAt"
+            """);
 
-        balance.UpdatedAt = DateTime.UtcNow;
-
-        db.ProcessedTransactions.Add(new ProcessedTransaction
-        {
-            TransactionId = transactionId,
-            ProcessedAt = DateTime.UtcNow
-        });
-
-        await db.SaveChangesAsync();
         await tx.CommitAsync();
     }
 
@@ -39,18 +41,4 @@ public class DailyBalanceRepository(ConsolidationDbContext db) : IDailyBalanceRe
         db.DailyBalances
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.UserId == userId && b.Date == date);
-
-    private async Task<DailyBalance> GetOrCreateAsync(Guid userId, DateOnly date)
-    {
-        var balance = await db.DailyBalances
-            .FirstOrDefaultAsync(b => b.UserId == userId && b.Date == date);
-
-        if (balance is null)
-        {
-            balance = new DailyBalance { Id = Guid.NewGuid(), UserId = userId, Date = date };
-            db.DailyBalances.Add(balance);
-        }
-
-        return balance;
-    }
 }

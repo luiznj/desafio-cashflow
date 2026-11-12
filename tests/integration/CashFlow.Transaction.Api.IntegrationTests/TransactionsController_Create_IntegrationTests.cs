@@ -199,7 +199,8 @@ public class TransactionsController_Create_IntegrationTests
         var response = await client.SendAsync(MakeCreateRequest(new { amount = 100, type = "Credit" }));
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        await Task.Delay(300);
+        // Outbox delivery runs every 100ms in test mode; 1 s is more than enough
+        await Task.Delay(1000);
 
         (await harness.Published.Any<TransactionCreatedEvent>()).Should().BeTrue();
     }
@@ -222,7 +223,7 @@ public class TransactionsController_Create_IntegrationTests
         var second = await client.SendAsync(MakeCreateRequest(body, key));
         second.StatusCode.Should().Be(HttpStatusCode.Conflict);
 
-        await Task.Delay(300);
+        await Task.Delay(1000);
 
         // Count events matching this specific transactionId
         var matchingEvents = harness.Published

@@ -26,20 +26,23 @@ public class AuthServiceTests
 
     private AuthService CreateSut() => new(_userRepo, _sessionRepo, _tokenService, _config, NullLogger<AuthService>.Instance);
 
-    private UserSession MakeSession() => new()
-    {
-        Id = Guid.NewGuid(),
-        UserId = Guid.NewGuid(),
-        RefreshToken = "refresh-token-opaque",
-        ExpiresAt = DateTime.UtcNow.AddDays(7),
-        CreatedAt = DateTime.UtcNow
-    };
+    private static (UserSession Session, string PlainToken) MakeSessionTuple(string plainToken = "plain-refresh-token") =>
+        (new UserSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
+            RefreshToken = "hashed-token",   // hash stored in DB
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            CreatedAt = DateTime.UtcNow
+        }, plainToken);
+
+    private static UserSession MakeSession() => MakeSessionTuple().Session;
 
     [Fact]
     public async Task SignUpAsync_NewEmail_CreatesUserWithHashedPassword()
     {
         _userRepo.FindByEmailAsync(Arg.Any<string>()).Returns((User?)null);
-        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSession());
+        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSessionTuple());
         _tokenService.GenerateAccessToken(Arg.Any<User>()).Returns("access-token");
 
         var request = new SignUpRequest("Test@Example.com", "Password1!");
@@ -56,7 +59,7 @@ public class AuthServiceTests
     public async Task SignUpAsync_NewEmail_EmailStoredAsLowerInvariant()
     {
         _userRepo.FindByEmailAsync(Arg.Any<string>()).Returns((User?)null);
-        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSession());
+        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSessionTuple());
         _tokenService.GenerateAccessToken(Arg.Any<User>()).Returns("access-token");
 
         var request = new SignUpRequest("Test@EXAMPLE.COM", "Password1!");
@@ -72,7 +75,7 @@ public class AuthServiceTests
     public async Task SignUpAsync_NewEmail_ReturnsTokensWithFutureExpiresAt()
     {
         _userRepo.FindByEmailAsync(Arg.Any<string>()).Returns((User?)null);
-        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSession());
+        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSessionTuple());
         _tokenService.GenerateAccessToken(Arg.Any<User>()).Returns("access-token");
 
         var sut = CreateSut();
@@ -101,7 +104,7 @@ public class AuthServiceTests
     public async Task SignUpAsync_NewEmail_CallsGenerateAccessToken()
     {
         _userRepo.FindByEmailAsync(Arg.Any<string>()).Returns((User?)null);
-        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSession());
+        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSessionTuple());
         _tokenService.GenerateAccessToken(Arg.Any<User>()).Returns("access-token");
 
         var sut = CreateSut();
@@ -118,7 +121,7 @@ public class AuthServiceTests
         var user = new User { Id = Guid.NewGuid(), Email = "user@example.com", PasswordHash = hash };
 
         _userRepo.FindByEmailAsync("user@example.com").Returns(user);
-        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSession());
+        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSessionTuple());
         _tokenService.GenerateAccessToken(Arg.Any<User>()).Returns("access-token");
 
         var sut = CreateSut();
@@ -187,12 +190,7 @@ public class AuthServiceTests
 
         _sessionRepo.FindByTokenAsync(session.RefreshToken).Returns(session);
         _userRepo.FindByIdAsync(session.UserId).Returns(user);
-        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(new UserSession
-        {
-            Id = Guid.NewGuid(),
-            RefreshToken = "new-refresh-token",
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        });
+        _sessionRepo.CreateAsync(Arg.Any<Guid>(), Arg.Any<int>()).Returns(MakeSessionTuple("new-plain-token"));
         _tokenService.GenerateAccessToken(Arg.Any<User>()).Returns("new-access-token");
 
         var sut = CreateSut();
@@ -200,7 +198,7 @@ public class AuthServiceTests
 
         await _sessionRepo.Received(1).RevokeAsync(session.Id);
         result.AccessToken.Should().Be("new-access-token");
-        result.RefreshToken.Should().Be("new-refresh-token");
+        result.RefreshToken.Should().Be("new-plain-token");
     }
 
     [Fact]

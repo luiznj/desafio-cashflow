@@ -52,7 +52,8 @@ public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifet
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:Default"] = connectionString
+                ["ConnectionStrings:Default"] = connectionString,
+                ["Outbox:DeliveryIntervalMs"] = "100"
             });
         });
 

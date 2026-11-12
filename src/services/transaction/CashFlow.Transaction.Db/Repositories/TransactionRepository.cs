@@ -1,4 +1,5 @@
 using CashFlow.Transaction.Db.Data;
+using CashFlow.Transaction.Db.Models;
 using Microsoft.EntityFrameworkCore;
 using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
 using TransactionType = CashFlow.Transaction.Db.Models.TransactionType;
@@ -7,11 +8,30 @@ namespace CashFlow.Transaction.Db.Repositories;
 
 public class TransactionRepository(TransactionDbContext db) : ITransactionRepository
 {
-    public Task<TransactionEntry> AddCreditAsync(Guid userId, decimal amount, string? description, string idempotencyKey) =>
-        AddAsync(userId, amount, TransactionType.Credit, description, idempotencyKey);
+    public TransactionEntry StageCredit(Guid userId, decimal amount, string? description, string idempotencyKey) =>
+        Stage(userId, amount, TransactionType.Credit, description, idempotencyKey);
 
-    public Task<TransactionEntry> AddDebitAsync(Guid userId, decimal amount, string? description, string idempotencyKey) =>
-        AddAsync(userId, -amount, TransactionType.Debit, description, idempotencyKey);
+    public TransactionEntry StageDebit(Guid userId, decimal amount, string? description, string idempotencyKey) =>
+        Stage(userId, -amount, TransactionType.Debit, description, idempotencyKey);
+
+    public void StageOutboxMessage(string type, string payload) =>
+        db.OutboxMessages.Add(new OutboxMessage { Type = type, Payload = payload });
+
+    public Task SaveAsync() => db.SaveChangesAsync();
+
+    public async Task<TransactionEntry> AddCreditAsync(Guid userId, decimal amount, string? description, string idempotencyKey)
+    {
+        var entry = StageCredit(userId, amount, description, idempotencyKey);
+        await SaveAsync();
+        return entry;
+    }
+
+    public async Task<TransactionEntry> AddDebitAsync(Guid userId, decimal amount, string? description, string idempotencyKey)
+    {
+        var entry = StageDebit(userId, amount, description, idempotencyKey);
+        await SaveAsync();
+        return entry;
+    }
 
     public Task<TransactionEntry?> FindByIdempotencyKeyAsync(string idempotencyKey) =>
         db.Transactions.FirstOrDefaultAsync(t => t.IdempotencyKey == idempotencyKey);
@@ -32,7 +52,7 @@ public class TransactionRepository(TransactionDbContext db) : ITransactionReposi
         return await query.OrderByDescending(t => t.OccurredAt).ToListAsync();
     }
 
-    private async Task<TransactionEntry> AddAsync(Guid userId, decimal amount, TransactionType type, string? description, string idempotencyKey)
+    private TransactionEntry Stage(Guid userId, decimal amount, TransactionType type, string? description, string idempotencyKey)
     {
         var entry = new TransactionEntry
         {
@@ -45,7 +65,6 @@ public class TransactionRepository(TransactionDbContext db) : ITransactionReposi
             OccurredAt = DateTime.UtcNow
         };
         db.Transactions.Add(entry);
-        await db.SaveChangesAsync();
         return entry;
     }
 }

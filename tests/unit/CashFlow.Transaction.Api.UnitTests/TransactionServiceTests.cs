@@ -4,7 +4,6 @@ using CashFlow.Transaction.Api.Services;
 using CashFlow.Transaction.Db.Models;
 using CashFlow.Transaction.Db.Repositories;
 using FluentAssertions;
-using MassTransit;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
@@ -15,12 +14,12 @@ namespace CashFlow.Transaction.Api.UnitTests;
 public class TransactionServiceTests
 {
     private readonly ITransactionRepository _repository = Substitute.For<ITransactionRepository>();
-    private readonly IPublishEndpoint _publisher = Substitute.For<IPublishEndpoint>();
     private readonly TransactionService _sut;
 
     public TransactionServiceTests()
     {
-        _sut = new TransactionService(_repository, _publisher, NullLogger<TransactionService>.Instance);
+        _repository.SaveAsync().Returns(Task.CompletedTask);
+        _sut = new TransactionService(_repository, NullLogger<TransactionService>.Instance);
     }
 
     private static TransactionEntry MakeTransaction(Guid userId, decimal amount, TransactionType type, DateTime? occurredAt = null) =>
@@ -36,31 +35,33 @@ public class TransactionServiceTests
         };
 
     [Fact]
-    public async Task CreateAsync_NewCredit_CallsAddCreditAsync()
+    public async Task CreateAsync_NewCredit_StagesCreditAndSaves()
     {
         var userId = Guid.NewGuid();
         var key = Guid.NewGuid().ToString();
         _repository.FindByIdempotencyKeyAsync(key).Returns((TransactionEntry?)null);
-        _repository.AddCreditAsync(userId, 100m, null, key).Returns(MakeTransaction(userId, 100m, TransactionType.Credit));
+        _repository.StageCredit(userId, 100m, null, key).Returns(MakeTransaction(userId, 100m, TransactionType.Credit));
 
         await _sut.CreateAsync(userId, new CreateTransactionRequest(100m, "Credit"), key);
 
-        await _repository.Received(1).AddCreditAsync(userId, 100m, null, key);
-        await _repository.DidNotReceive().AddDebitAsync(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
+        _repository.Received(1).StageCredit(userId, 100m, null, key);
+        _repository.DidNotReceive().StageDebit(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
+        await _repository.Received(1).SaveAsync();
     }
 
     [Fact]
-    public async Task CreateAsync_NewDebit_CallsAddDebitAsync()
+    public async Task CreateAsync_NewDebit_StagesDebitAndSaves()
     {
         var userId = Guid.NewGuid();
         var key = Guid.NewGuid().ToString();
         _repository.FindByIdempotencyKeyAsync(key).Returns((TransactionEntry?)null);
-        _repository.AddDebitAsync(userId, 50m, null, key).Returns(MakeTransaction(userId, -50m, TransactionType.Debit));
+        _repository.StageDebit(userId, 50m, null, key).Returns(MakeTransaction(userId, -50m, TransactionType.Debit));
 
         await _sut.CreateAsync(userId, new CreateTransactionRequest(50m, "Debit"), key);
 
-        await _repository.Received(1).AddDebitAsync(userId, 50m, null, key);
-        await _repository.DidNotReceive().AddCreditAsync(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
+        _repository.Received(1).StageDebit(userId, 50m, null, key);
+        _repository.DidNotReceive().StageCredit(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
+        await _repository.Received(1).SaveAsync();
     }
 
     [Fact]
@@ -69,7 +70,7 @@ public class TransactionServiceTests
         var userId = Guid.NewGuid();
         var key = Guid.NewGuid().ToString();
         _repository.FindByIdempotencyKeyAsync(key).Returns((TransactionEntry?)null);
-        _repository.AddCreditAsync(userId, 100m, null, key).Returns(MakeTransaction(userId, 100m, TransactionType.Credit));
+        _repository.StageCredit(userId, 100m, null, key).Returns(MakeTransaction(userId, 100m, TransactionType.Credit));
 
         var (_, isNew) = await _sut.CreateAsync(userId, new CreateTransactionRequest(100m, "Credit"), key);
 
@@ -77,16 +78,16 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_NewCreditTransaction_PublishesTransactionCreatedEvent()
+    public async Task CreateAsync_NewTransaction_StagesOutboxMessage()
     {
         var userId = Guid.NewGuid();
         var key = Guid.NewGuid().ToString();
         _repository.FindByIdempotencyKeyAsync(key).Returns((TransactionEntry?)null);
-        _repository.AddCreditAsync(userId, 100m, null, key).Returns(MakeTransaction(userId, 100m, TransactionType.Credit));
+        _repository.StageCredit(userId, 100m, null, key).Returns(MakeTransaction(userId, 100m, TransactionType.Credit));
 
         await _sut.CreateAsync(userId, new CreateTransactionRequest(100m, "Credit"), key);
 
-        await _publisher.Received(1).Publish(Arg.Any<TransactionCreatedEvent>(), Arg.Any<CancellationToken>());
+        _repository.Received(1).StageOutboxMessage(nameof(TransactionCreatedEvent), Arg.Any<string>());
     }
 
     [Fact]
@@ -102,7 +103,7 @@ public class TransactionServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_DuplicateIdempotencyKey_DoesNotCallAddCreditOrDebit()
+    public async Task CreateAsync_DuplicateIdempotencyKey_DoesNotStageOrSave()
     {
         var userId = Guid.NewGuid();
         var key = Guid.NewGuid().ToString();
@@ -110,20 +111,10 @@ public class TransactionServiceTests
 
         await _sut.CreateAsync(userId, new CreateTransactionRequest(100m, "Credit"), key);
 
-        await _repository.DidNotReceive().AddCreditAsync(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
-        await _repository.DidNotReceive().AddDebitAsync(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
-    }
-
-    [Fact]
-    public async Task CreateAsync_DuplicateIdempotencyKey_DoesNotPublishEvent()
-    {
-        var userId = Guid.NewGuid();
-        var key = Guid.NewGuid().ToString();
-        _repository.FindByIdempotencyKeyAsync(key).Returns(MakeTransaction(userId, 100m, TransactionType.Credit));
-
-        await _sut.CreateAsync(userId, new CreateTransactionRequest(100m, "Credit"), key);
-
-        await _publisher.DidNotReceive().Publish(Arg.Any<TransactionCreatedEvent>(), Arg.Any<CancellationToken>());
+        _repository.DidNotReceive().StageCredit(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
+        _repository.DidNotReceive().StageDebit(Arg.Any<Guid>(), Arg.Any<decimal>(), Arg.Any<string?>(), Arg.Any<string>());
+        _repository.DidNotReceive().StageOutboxMessage(Arg.Any<string>(), Arg.Any<string>());
+        await _repository.DidNotReceive().SaveAsync();
     }
 
     [Fact]
@@ -132,7 +123,7 @@ public class TransactionServiceTests
         var userId = Guid.NewGuid();
         var key = Guid.NewGuid().ToString();
         _repository.FindByIdempotencyKeyAsync(key).Returns((TransactionEntry?)null);
-        _repository.AddDebitAsync(userId, 50m, null, key).Returns(MakeTransaction(userId, -50m, TransactionType.Debit));
+        _repository.StageDebit(userId, 50m, null, key).Returns(MakeTransaction(userId, -50m, TransactionType.Debit));
 
         var (response, _) = await _sut.CreateAsync(userId, new CreateTransactionRequest(50m, "Debit"), key);
 
