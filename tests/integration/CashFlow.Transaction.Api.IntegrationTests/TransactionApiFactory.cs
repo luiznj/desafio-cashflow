@@ -47,10 +47,6 @@ public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifet
     {
         var connectionString = _envConnectionString ?? _postgres!.GetConnectionString();
 
-        if (!string.IsNullOrEmpty(_envConnectionString))
-        {
-            connectionString = ReplaceDatabase(connectionString, "cashflow_transaction_test");
-        }
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
@@ -90,15 +86,6 @@ public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifet
         });
 
         builder.UseEnvironment("Test");
-    }
-
-    private static string ReplaceDatabase(string connectionString, string databaseName)
-    {
-        var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
-        {
-            Database = databaseName
-        };
-        return builder.ConnectionString;
     }
 
     protected override IHost CreateHost(IHostBuilder builder)

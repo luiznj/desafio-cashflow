@@ -45,10 +45,6 @@ public class ConsolidationApiFactory : WebApplicationFactory<Program>, IAsyncLif
     {
         var connectionString = _envConnectionString ?? _postgres!.GetConnectionString();
 
-        if (!string.IsNullOrEmpty(_envConnectionString))
-        {
-            connectionString = ReplaceDatabase(connectionString, "cashflow_test");
-        }
 
         builder.ConfigureAppConfiguration((_, cfg) =>
         {
@@ -100,12 +96,4 @@ public class ConsolidationApiFactory : WebApplicationFactory<Program>, IAsyncLif
         });
     }
 
-    private static string ReplaceDatabase(string connectionString, string databaseName)
-    {
-        var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
-        {
-            Database = databaseName
-        };
-        return builder.ConnectionString;
-    }
 }

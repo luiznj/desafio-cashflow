@@ -57,8 +57,23 @@ jobs:
       - name: Run unit tests
         run: dotnet test src/CashFlow.slnx --no-build --configuration Release --logger "console;verbosity=normal" --filter "FullyQualifiedName!~IntegrationTests"
 
-      - name: Run integration tests
-        run: dotnet test src/CashFlow.slnx --no-build --configuration Release --logger "console;verbosity=normal" --filter "FullyQualifiedName~IntegrationTests"
+      - name: Create test databases
+        run: |
+          PGPASSWORD=cashflow psql -h localhost -U cashflow -d postgres -c "CREATE DATABASE IF NOT EXISTS cashflow_identity_test;"
+          PGPASSWORD=cashflow psql -h localhost -U cashflow -d postgres -c "CREATE DATABASE IF NOT EXISTS cashflow_transaction_test;"
+          PGPASSWORD=cashflow psql -h localhost -U cashflow -d postgres -c "CREATE DATABASE IF NOT EXISTS cashflow_test;"
+
+      - name: Run Identity integration tests
+        run: dotnet test tests/integration/CashFlow.Identity.Api.IntegrationTests/ --no-build --configuration Release --logger "console;verbosity=normal"
         env:
-          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=placeholder;Username=cashflow;Password=cashflow"
-          DOTNET_TEST_PARALLEL_MAX_DEGREE_OF_PARALLELISM: "1"
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=cashflow_identity_test;Username=cashflow;Password=cashflow"
+
+      - name: Run Transaction integration tests
+        run: dotnet test tests/integration/CashFlow.Transaction.Api.IntegrationTests/ --no-build --configuration Release --logger "console;verbosity=normal"
+        env:
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=cashflow_transaction_test;Username=cashflow;Password=cashflow"
+
+      - name: Run Consolidation integration tests
+        run: dotnet test tests/integration/CashFlow.Consolidation.Api.IntegrationTests/ --no-build --configuration Release --logger "console;verbosity=normal"
+        env:
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=cashflow_test;Username=cashflow;Password=cashflow"

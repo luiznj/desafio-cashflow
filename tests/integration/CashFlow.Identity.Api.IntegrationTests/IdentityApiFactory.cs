@@ -41,11 +41,6 @@ public class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         var tempKeyPath = Path.GetTempFileName() + ".pem";
         var connectionString = _envConnectionString ?? _postgres!.GetConnectionString();
 
-        if (!string.IsNullOrEmpty(_envConnectionString))
-        {
-            connectionString = ReplaceDatabase(connectionString, "cashflow_identity_test");
-        }
-
         builder.ConfigureAppConfiguration((_, cfg) =>
         {
             cfg.AddInMemoryCollection(new Dictionary<string, string?>
@@ -66,14 +61,5 @@ public class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
             db.Database.Migrate();
         });
-    }
-
-    private static string ReplaceDatabase(string connectionString, string databaseName)
-    {
-        var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
-        {
-            Database = databaseName
-        };
-        return builder.ConnectionString;
     }
 }
