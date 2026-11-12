@@ -58,6 +58,6 @@ jobs:
         run: dotnet test src/CashFlow.slnx --no-build --configuration Release --logger "console;verbosity=normal" --filter "FullyQualifiedName!~IntegrationTests"
 
       - name: Run integration tests
-        run: dotnet test src/CashFlow.slnx --no-build --configuration Release --logger "console;verbosity=normal" --filter "FullyQualifiedName~IntegrationTests"
+        run: dotnet test src/CashFlow.slnx --no-build --configuration Release --logger "console;verbosity=normal" --filter "FullyQualifiedName~IntegrationTests" --parallel none
         env:
           ConnectionStrings__Default: "Host=localhost;Port=5432;Database=placeholder;Username=cashflow;Password=cashflow"
