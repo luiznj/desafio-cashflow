@@ -18,4 +18,17 @@
   <Folder Name="/shared/">
     <Project Path="shared/CashFlow.Shared/CashFlow.Shared.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/shared/CashFlow.Tests.Common/CashFlow.Tests.Common.csproj" />
+  </Folder>
+  <Folder Name="/tests/unit/">
+    <Project Path="../tests/unit/CashFlow.Identity.Api.UnitTests/CashFlow.Identity.Api.UnitTests.csproj" />
+    <Project Path="../tests/unit/CashFlow.Transaction.Api.UnitTests/CashFlow.Transaction.Api.UnitTests.csproj" />
+    <Project Path="../tests/unit/CashFlow.Consolidation.Api.UnitTests/CashFlow.Consolidation.Api.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/integration/">
+    <Project Path="../tests/integration/CashFlow.Identity.Api.IntegrationTests/CashFlow.Identity.Api.IntegrationTests.csproj" />
+    <Project Path="../tests/integration/CashFlow.Transaction.Api.IntegrationTests/CashFlow.Transaction.Api.IntegrationTests.csproj" />
+    <Project Path="../tests/integration/CashFlow.Consolidation.Api.IntegrationTests/CashFlow.Consolidation.Api.IntegrationTests.csproj" />
+  </Folder>
 </Solution>
