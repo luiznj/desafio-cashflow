@@ -6,8 +6,8 @@ using Xunit;
 
 namespace CashFlow.Identity.Api.IntegrationTests;
 
+[Collection("IdentityApi")]
 public class JwksController_IntegrationTests(IdentityApiFactory factory)
-    : IClassFixture<IdentityApiFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
 

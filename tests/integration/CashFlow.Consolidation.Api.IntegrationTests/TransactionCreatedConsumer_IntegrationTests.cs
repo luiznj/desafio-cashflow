@@ -8,23 +8,17 @@ using Xunit;
 
 namespace CashFlow.Consolidation.Api.IntegrationTests;
 
-public class TransactionCreatedConsumer_IntegrationTests : IClassFixture<ConsolidationApiFactory>, IAsyncLifetime
+[Collection("ConsolidationApi")]
+public class TransactionCreatedConsumer_IntegrationTests
 {
     private readonly ConsolidationApiFactory _factory;
-    private ITestHarness _harness = null!;
+    private readonly ITestHarness _harness;
 
     public TransactionCreatedConsumer_IntegrationTests(ConsolidationApiFactory factory)
     {
         _factory = factory;
+        _harness = factory.Services.GetRequiredService<ITestHarness>();
     }
-
-    public async Task InitializeAsync()
-    {
-        _harness = _factory.Services.GetRequiredService<ITestHarness>();
-        await _harness.Start();
-    }
-
-    public async Task DisposeAsync() => await _harness.Stop();
 
     private async Task<CashFlow.Consolidation.Db.Models.DailyBalance?> GetBalanceAsync(Guid userId, DateOnly date)
     {

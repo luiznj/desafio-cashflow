@@ -2,12 +2,14 @@ using CashFlow.Consolidation.Api.Messaging;
 using CashFlow.Consolidation.Db.Data;
 using CashFlow.Tests.Common;
 using MassTransit;
+using MassTransit.Testing;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -82,7 +84,8 @@ public class ConsolidationApiFactory : WebApplicationFactory<Program>, IAsyncLif
                     ValidAudience = "cashflow-services",
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = TestJwtTokenGenerator.PublicKey
+                    IssuerSigningKey = TestJwtTokenGenerator.PublicKey,
+                    ClockSkew = TimeSpan.Zero
                 };
             });
         });
@@ -96,4 +99,11 @@ public class ConsolidationApiFactory : WebApplicationFactory<Program>, IAsyncLif
         });
     }
 
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+        var harness = host.Services.GetRequiredService<ITestHarness>();
+        harness.Start().GetAwaiter().GetResult();
+        return host;
+    }
 }

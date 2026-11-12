@@ -80,7 +80,8 @@ public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifet
                     ValidAudience = "cashflow-services",
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = TestJwtTokenGenerator.PublicKey
+                    IssuerSigningKey = TestJwtTokenGenerator.PublicKey,
+                    ClockSkew = TimeSpan.Zero
                 };
             });
         });

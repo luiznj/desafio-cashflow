@@ -9,7 +9,8 @@ using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
 
 namespace CashFlow.Transaction.Api.IntegrationTests;
 
-public class TransactionRepository_IntegrationTests : IClassFixture<TransactionApiFactory>
+[Collection("TransactionApi")]
+public class TransactionRepository_IntegrationTests
 {
     private readonly TransactionApiFactory _factory;
 

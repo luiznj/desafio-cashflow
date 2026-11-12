@@ -13,7 +13,8 @@ using Xunit;
 
 namespace CashFlow.Transaction.Api.IntegrationTests;
 
-public class TransactionsController_GetAll_IntegrationTests : IClassFixture<TransactionApiFactory>
+[Collection("TransactionApi")]
+public class TransactionsController_GetAll_IntegrationTests
 {
     private readonly TransactionApiFactory _factory;
 

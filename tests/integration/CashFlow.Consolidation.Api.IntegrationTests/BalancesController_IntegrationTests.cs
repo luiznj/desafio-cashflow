@@ -11,7 +11,8 @@ using Xunit;
 
 namespace CashFlow.Consolidation.Api.IntegrationTests;
 
-public class BalancesController_IntegrationTests : IClassFixture<ConsolidationApiFactory>
+[Collection("ConsolidationApi")]
+public class BalancesController_IntegrationTests
 {
     private readonly ConsolidationApiFactory _factory;
     private readonly HttpClient _client;

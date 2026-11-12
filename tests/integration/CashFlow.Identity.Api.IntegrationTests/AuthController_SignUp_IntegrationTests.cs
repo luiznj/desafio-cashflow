@@ -8,8 +8,8 @@ using Xunit;
 
 namespace CashFlow.Identity.Api.IntegrationTests;
 
+[Collection("IdentityApi")]
 public class AuthController_SignUp_IntegrationTests(IdentityApiFactory factory)
-    : IClassFixture<IdentityApiFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
 
