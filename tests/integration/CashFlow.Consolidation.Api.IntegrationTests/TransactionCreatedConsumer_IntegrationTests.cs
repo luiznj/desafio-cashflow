@@ -28,14 +28,18 @@ public class TransactionCreatedConsumer_IntegrationTests
             .FirstOrDefaultAsync(b => b.UserId == userId && b.Date == date);
     }
 
-    private async Task WaitForConsumptionAsync(int expectedCount = 1)
+    private async Task<int> GetConsumedCountAsync() =>
+        (await _harness.Consumed.SelectAsync<TransactionCreatedEvent>().ToListAsync()).Count;
+
+    private async Task PublishAndWaitAsync(TransactionCreatedEvent evt, int expectedIncrement = 1)
     {
-        // Poll until consumed or timeout
+        var baseline = await GetConsumedCountAsync();
+        await _harness.Bus.Publish(evt);
+
         var deadline = DateTime.UtcNow.AddSeconds(10);
         while (DateTime.UtcNow < deadline)
         {
-            var consumed = await _harness.Consumed.SelectAsync<TransactionCreatedEvent>().ToListAsync();
-            if (consumed.Count >= expectedCount)
+            if (await GetConsumedCountAsync() >= baseline + expectedIncrement)
                 return;
             await Task.Delay(100);
         }
@@ -50,8 +54,7 @@ public class TransactionCreatedConsumer_IntegrationTests
             Guid.NewGuid(), userId, 150m, "Credit",
             new DateTime(date.Year, date.Month, date.Day, 10, 0, 0, DateTimeKind.Utc));
 
-        await _harness.Bus.Publish(evt);
-        await WaitForConsumptionAsync();
+        await PublishAndWaitAsync(evt);
 
         var balance = await GetBalanceAsync(userId, date);
         balance.Should().NotBeNull();
@@ -68,8 +71,7 @@ public class TransactionCreatedConsumer_IntegrationTests
             Guid.NewGuid(), userId, -75m, "Debit",
             new DateTime(date.Year, date.Month, date.Day, 10, 0, 0, DateTimeKind.Utc));
 
-        await _harness.Bus.Publish(evt);
-        await WaitForConsumptionAsync();
+        await PublishAndWaitAsync(evt);
 
         var balance = await GetBalanceAsync(userId, date);
         balance.Should().NotBeNull();
@@ -87,11 +89,8 @@ public class TransactionCreatedConsumer_IntegrationTests
             transactionId, userId, 100m, "Credit",
             new DateTime(date.Year, date.Month, date.Day, 10, 0, 0, DateTimeKind.Utc));
 
-        await _harness.Bus.Publish(evt);
-        await WaitForConsumptionAsync(1);
-
-        await _harness.Bus.Publish(evt); // duplicate
-        await WaitForConsumptionAsync(2);
+        await PublishAndWaitAsync(evt);
+        await PublishAndWaitAsync(evt); // duplicate — consumer skips via idempotency check
 
         var balance = await GetBalanceAsync(userId, date);
         balance.Should().NotBeNull();
@@ -110,8 +109,7 @@ public class TransactionCreatedConsumer_IntegrationTests
         var before = await GetBalanceAsync(userId, date);
         before.Should().BeNull();
 
-        await _harness.Bus.Publish(evt);
-        await WaitForConsumptionAsync();
+        await PublishAndWaitAsync(evt);
 
         var after = await GetBalanceAsync(userId, date);
         after.Should().NotBeNull();
@@ -126,8 +124,7 @@ public class TransactionCreatedConsumer_IntegrationTests
             Guid.NewGuid(), userId, 100m, "Credit",
             new DateTime(2026, 11, 24, 23, 59, 59, DateTimeKind.Utc));
 
-        await _harness.Bus.Publish(evt);
-        await WaitForConsumptionAsync();
+        await PublishAndWaitAsync(evt);
 
         var balance = await GetBalanceAsync(userId, expectedDate);
         balance.Should().NotBeNull();
