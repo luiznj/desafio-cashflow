@@ -59,9 +59,9 @@ jobs:
 
       - name: Create test databases
         run: |
-          PGPASSWORD=cashflow psql -h localhost -U cashflow -d postgres -c "CREATE DATABASE IF NOT EXISTS cashflow_identity_test;"
-          PGPASSWORD=cashflow psql -h localhost -U cashflow -d postgres -c "CREATE DATABASE IF NOT EXISTS cashflow_transaction_test;"
-          PGPASSWORD=cashflow psql -h localhost -U cashflow -d postgres -c "CREATE DATABASE IF NOT EXISTS cashflow_test;"
+          PGPASSWORD=cashflow createdb -h localhost -U cashflow cashflow_identity_test || true
+          PGPASSWORD=cashflow createdb -h localhost -U cashflow cashflow_transaction_test || true
+          PGPASSWORD=cashflow createdb -h localhost -U cashflow cashflow_test || true
 
       - name: Run Identity integration tests
         run: dotnet test tests/integration/CashFlow.Identity.Api.IntegrationTests/ --no-build --configuration Release --logger "console;verbosity=normal"
