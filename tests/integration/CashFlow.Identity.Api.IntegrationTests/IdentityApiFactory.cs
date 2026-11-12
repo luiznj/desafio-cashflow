@@ -11,32 +11,46 @@ namespace CashFlow.Identity.Api.IntegrationTests;
 
 public class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithDatabase("cashflow_identity_test")
-        .WithUsername("test")
-        .WithPassword("test")
-        .Build();
+    private PostgreSqlContainer? _postgres;
+    private readonly string? _envConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Default");
 
     public async Task InitializeAsync()
     {
-        await _postgres.StartAsync();
+        if (string.IsNullOrEmpty(_envConnectionString))
+        {
+            _postgres = new PostgreSqlBuilder()
+                .WithDatabase("cashflow_identity_test")
+                .WithUsername("test")
+                .WithPassword("test")
+                .Build();
+            await _postgres.StartAsync();
+        }
     }
 
     public new async Task DisposeAsync()
     {
-        await _postgres.StopAsync();
+        if (_postgres is not null)
+        {
+            await _postgres.StopAsync();
+        }
         await base.DisposeAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         var tempKeyPath = Path.GetTempFileName() + ".pem";
+        var connectionString = _envConnectionString ?? _postgres!.GetConnectionString();
+
+        if (!string.IsNullOrEmpty(_envConnectionString))
+        {
+            connectionString = ReplaceDatabase(connectionString, "cashflow_identity_test");
+        }
 
         builder.ConfigureAppConfiguration((_, cfg) =>
         {
             cfg.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:Default"] = _postgres.GetConnectionString(),
+                ["ConnectionStrings:Default"] = connectionString,
                 ["Jwt:PrivateKeyPath"] = tempKeyPath,
                 ["Jwt:Issuer"] = "cashflow-identity",
                 ["Jwt:Audience"] = "cashflow-services",
@@ -52,5 +66,14 @@ public class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
             db.Database.Migrate();
         });
+    }
+
+    private static string ReplaceDatabase(string connectionString, string databaseName)
+    {
+        var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
+        {
+            Database = databaseName
+        };
+        return builder.ConnectionString;
     }
 }

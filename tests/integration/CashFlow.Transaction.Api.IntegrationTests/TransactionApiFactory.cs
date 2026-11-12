@@ -17,31 +17,46 @@ namespace CashFlow.Transaction.Api.IntegrationTests;
 
 public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithDatabase("cashflow_transaction_test")
-        .WithUsername("test")
-        .WithPassword("test")
-        .Build();
-
+    private PostgreSqlContainer? _postgres;
+    private readonly string? _envConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Default");
     private ITestHarness? _harness;
 
-    public async Task InitializeAsync() => await _postgres.StartAsync();
+    public async Task InitializeAsync()
+    {
+        if (string.IsNullOrEmpty(_envConnectionString))
+        {
+            _postgres = new PostgreSqlBuilder()
+                .WithDatabase("cashflow_transaction_test")
+                .WithUsername("test")
+                .WithPassword("test")
+                .Build();
+            await _postgres.StartAsync();
+        }
+    }
 
     public new async Task DisposeAsync()
     {
         if (_harness is not null)
             await _harness.Stop();
-        await _postgres.StopAsync();
+        if (_postgres is not null)
+            await _postgres.StopAsync();
         await base.DisposeAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        var connectionString = _envConnectionString ?? _postgres!.GetConnectionString();
+
+        if (!string.IsNullOrEmpty(_envConnectionString))
+        {
+            connectionString = ReplaceDatabase(connectionString, "cashflow_transaction_test");
+        }
+
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:Default"] = _postgres.GetConnectionString()
+                ["ConnectionStrings:Default"] = connectionString
             });
         });
 
@@ -75,6 +90,15 @@ public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifet
         });
 
         builder.UseEnvironment("Test");
+    }
+
+    private static string ReplaceDatabase(string connectionString, string databaseName)
+    {
+        var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
+        {
+            Database = databaseName
+        };
+        return builder.ConnectionString;
     }
 
     protected override IHost CreateHost(IHostBuilder builder)
