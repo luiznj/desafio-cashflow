@@ -29,7 +29,7 @@ paths:
 | Nome              | Tipo | Rota                 | Autenticado? |
 | ----------------- | ---- | -------------------- | ------------ |
 | CreateTransaction | POST | /api/v1/transactions | Sim          |
-| GetTransactions   | GET  | /api/vi/transactions | Sim          |
+| GetTransactions   | GET  | /api/v1/transactions | Sim          |
 
 ### Create Transaction
 
@@ -41,7 +41,7 @@ paths:
   - O tipo da transação, se é `Credit` ou `Debit` (`type`)
 - Deve validar a entrada e retornar o erro apropriado com o código HTTP e uma mensagem explicativa
 - Recuperar o UserId do JWT
-- Verificar se já existe uma transação com o mesmo `Idempotency-Key` para o usuário; se sim, retornar 200 com a transação já criada (idempotência)
+- Verificar se já existe uma transação com o mesmo `Idempotency-Key` para o usuário; se sim, retornar **409 Conflict** (a transação já existe)
 - Chamar a rotina de criação de transação correspondente ao tipo informado
 - Retornar Http 201 em caso de sucesso (primeira inserção)
 - Em caso de falha, deve-se retornar o erro http correspondente
@@ -49,7 +49,7 @@ paths:
 ### Get Transactions
 
 - Somente usuários autenticados podem ter acesso à este endpoint
-- Este endpoint pode receber como parametro no body:
+- Este endpoint pode receber como query parameters:
   - Tipo da transação (Crédito ou Débito)
   - Data de inicio
   - Data de fim

@@ -43,7 +43,7 @@ O `.Api` depende do `.Db` via interface — nunca o contrário.
 docker compose up -d
 
 # Build da solution
-dotnet build src/CashFlow.sln
+dotnet build src/CashFlow.slnx
 
 # Rodar um serviço individualmente
 dotnet run --project src/gateway/CashFlow.Gateway

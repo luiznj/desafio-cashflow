@@ -32,6 +32,7 @@ Responsável por autenticação e emissão de tokens.
 
 **Dados (`.Db` / schema `identity`):**
 - Tabela `users`: id, e-mail, hash de senha, data de criação
+- Tabela `user_sessions`: id, user_id, refresh_token (hash), data de expiração, revogado
 
 ---
 
@@ -43,7 +44,6 @@ Responsável por receber e persistir lançamentos do comerciante.
 - Registrar lançamento para o usuário autenticado
   - Tipo deve ser `Débito` ou `Crédito`
   - Valor deve ser positivo e não-zero
-  - Data do lançamento não pode ser futura
 - Listar lançamentos do usuário autenticado (com filtro opcional por data)
 - Após persistir, publicar evento `TransactionCreated` no RabbitMQ de forma atômica (Outbox ou dentro da mesma transação)
 
@@ -64,8 +64,8 @@ Responsável pelo saldo diário consolidado.
   - Retornar saldo zerado para dias sem lançamentos (sem erro)
 
 **Dados (`.Db` / schema `consolidation`):**
-- Tabela `daily_balances`: id, user_id, data, saldo, data de atualização
-- Tabela `processed_events`: event_id — garante idempotência no consumo
+- Tabela `daily_balances`: id, user_id, data, total_credits, total_debits, data de atualização
+- Tabela `processed_transactions`: transaction_id — garante idempotência no consumo
 
 ---
 
@@ -105,7 +105,7 @@ C4Container
       Rel(consolidation_api, db_consolidation, "", "")
     }
 
-    Rel(user, api, "HTTPS", "")
+    Rel(user, api, "HTTP", "")
 
     Rel(api, identity_api, "", "Valida usuário")
     Rel(api, trx_api, "", "Registra lançamentos")

@@ -91,7 +91,7 @@ dotnet ef database update --project services/consolidation/CashFlow.Consolidatio
 
 ### 3. Rodar os serviços
 
-Abra 3 terminais (um para cada serviço) e execute:
+Abra 4 terminais (um para cada serviço mais o Gateway) e execute:
 
 **Terminal 1 — Identity (porta 5001):**
 ```bash
