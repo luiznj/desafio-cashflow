@@ -7,13 +7,16 @@ using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
 
 namespace CashFlow.Transaction.Api.Services;
 
-public class TransactionService(ITransactionRepository repository, IPublishEndpoint publisher) : ITransactionService
+public class TransactionService(ITransactionRepository repository, IPublishEndpoint publisher, ILogger<TransactionService> logger) : ITransactionService
 {
     public async Task<(TransactionResponse Transaction, bool IsNew)> CreateAsync(Guid userId, CreateTransactionRequest request, string idempotencyKey)
     {
         var existing = await repository.FindByIdempotencyKeyAsync(idempotencyKey);
         if (existing is not null)
+        {
+            logger.LogWarning("Idempotência: chave {IdempotencyKey} já utilizada pelo usuário {UserId}", idempotencyKey, userId);
             return (Map(existing), IsNew: false);
+        }
 
         var type = Enum.Parse<TransactionType>(request.Type, ignoreCase: true);
 
@@ -28,6 +31,7 @@ public class TransactionService(ITransactionRepository repository, IPublishEndpo
             entry.Type.ToString(),
             entry.OccurredAt));
 
+        logger.LogInformation("Lançamento criado {TransactionId} | Usuário {UserId} | Tipo {Type} | Valor {Amount}", entry.Id, userId, type, entry.Amount);
         return (Map(entry), IsNew: true);
     }
 

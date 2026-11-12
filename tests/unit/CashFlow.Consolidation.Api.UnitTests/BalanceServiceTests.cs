@@ -2,6 +2,7 @@ using CashFlow.Consolidation.Api.Services;
 using CashFlow.Consolidation.Db.Models;
 using CashFlow.Consolidation.Db.Repositories;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -14,7 +15,7 @@ public class BalanceServiceTests
 
     public BalanceServiceTests()
     {
-        _sut = new BalanceService(_repository);
+        _sut = new BalanceService(_repository, NullLogger<BalanceService>.Instance);
     }
 
     [Fact]

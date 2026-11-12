@@ -3,6 +3,7 @@ using CashFlow.Transaction.Db.Data;
 using CashFlow.Transaction.Db.Models;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -39,7 +40,7 @@ public class TransactionsController_GetAll_IntegrationTests : IClassFixture<Tran
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TransactionDbContext>();
-        db.Add(new Transaction
+        db.Add(new TransactionEntry
         {
             Id = Guid.NewGuid(),
             UserId = userId,

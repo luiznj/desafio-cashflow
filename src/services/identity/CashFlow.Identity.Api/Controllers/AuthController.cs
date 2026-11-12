@@ -7,14 +7,17 @@ namespace CashFlow.Identity.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
-public class AuthController(IAuthService authService, SignUpRequestValidator validator) : ControllerBase
+public class AuthController(IAuthService authService, SignUpRequestValidator validator, ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
     {
         var validation = await validator.ValidateAsync(request);
         if (!validation.IsValid)
+        {
+            logger.LogDebug("Sign-up rejeitado por validação: {Errors}", string.Join(", ", validation.Errors.Select(e => e.ErrorMessage)));
             return BadRequest(new { errors = validation.Errors.Select(e => e.ErrorMessage) });
+        }
 
         try
         {

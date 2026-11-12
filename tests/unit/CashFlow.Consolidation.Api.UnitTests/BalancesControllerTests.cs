@@ -4,6 +4,7 @@ using CashFlow.Consolidation.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using System.Security.Claims;
 using Xunit;
@@ -18,7 +19,7 @@ public class BalancesControllerTests
 
     public BalancesControllerTests()
     {
-        _sut = new BalancesController(_service)
+        _sut = new BalancesController(_service, NullLogger<BalancesController>.Instance)
         {
         ControllerContext = new ControllerContext
         {

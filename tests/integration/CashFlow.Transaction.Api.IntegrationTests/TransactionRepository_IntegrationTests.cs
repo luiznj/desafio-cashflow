@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
 
 namespace CashFlow.Transaction.Api.IntegrationTests;
 
@@ -140,8 +141,8 @@ public class TransactionRepository_IntegrationTests : IClassFixture<TransactionA
         var newer = DateTime.UtcNow.AddDays(-1);
 
         db.Transactions.AddRange(
-            new Transaction { Id = Guid.NewGuid(), UserId = userId, Amount = 10m, Type = TransactionType.Credit, Description = "", IdempotencyKey = Guid.NewGuid().ToString(), OccurredAt = older },
-            new Transaction { Id = Guid.NewGuid(), UserId = userId, Amount = 20m, Type = TransactionType.Credit, Description = "", IdempotencyKey = Guid.NewGuid().ToString(), OccurredAt = newer }
+            new TransactionEntry { Id = Guid.NewGuid(), UserId = userId, Amount = 10m, Type = TransactionType.Credit, Description = "", IdempotencyKey = Guid.NewGuid().ToString(), OccurredAt = older },
+            new TransactionEntry { Id = Guid.NewGuid(), UserId = userId, Amount = 20m, Type = TransactionType.Credit, Description = "", IdempotencyKey = Guid.NewGuid().ToString(), OccurredAt = newer }
         );
         await db.SaveChangesAsync();
 

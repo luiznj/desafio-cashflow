@@ -8,13 +8,16 @@ namespace CashFlow.Consolidation.Api.Controllers;
 [ApiController]
 [Route("api/v1/balances")]
 [Authorize]
-public class BalancesController(IBalanceService service) : ControllerBase
+public class BalancesController(IBalanceService service, ILogger<BalancesController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetBalance([FromQuery] string date)
     {
         if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsedDate))
+        {
+            logger.LogDebug("Data inválida recebida: {Date}", date);
             return BadRequest(new { message = "Data inválida. Use o formato yyyy-MM-dd (ex: 2026-11-11)." });
+        }
 
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var result = await service.GetAsync(userId, parsedDate);

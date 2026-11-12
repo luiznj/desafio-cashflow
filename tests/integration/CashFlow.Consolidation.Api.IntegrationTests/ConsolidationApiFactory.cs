@@ -1,14 +1,16 @@
 using CashFlow.Consolidation.Api.Messaging;
 using CashFlow.Consolidation.Db.Data;
 using CashFlow.Tests.Common;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Testcontainers.PostgreSql;
-using MassTransit;
+using Xunit;
 
 namespace CashFlow.Consolidation.Api.IntegrationTests;
 

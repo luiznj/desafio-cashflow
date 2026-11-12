@@ -1,6 +1,7 @@
 using CashFlow.Consolidation.Db.Repositories;
 using CashFlow.Tests.Common;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;

@@ -10,16 +10,22 @@ namespace CashFlow.Transaction.Api.Controllers;
 [ApiController]
 [Route("api/v1/transactions")]
 [Authorize]
-public class TransactionsController(ITransactionService service, CreateTransactionRequestValidator validator) : ControllerBase
+public class TransactionsController(ITransactionService service, CreateTransactionRequestValidator validator, ILogger<TransactionsController> logger) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTransactionRequest request)
     {
         if (!Request.Headers.TryGetValue("Idempotency-Key", out var keyHeader) || string.IsNullOrWhiteSpace(keyHeader))
+        {
+            logger.LogDebug("Requisição sem header Idempotency-Key");
             return BadRequest(new { message = "O header 'Idempotency-Key' é obrigatório." });
+        }
 
         if (!Guid.TryParse(keyHeader, out _))
+        {
+            logger.LogDebug("Idempotency-Key inválido: {Key}", keyHeader.ToString());
             return BadRequest(new { message = "O header 'Idempotency-Key' deve ser um GUID válido." });
+        }
 
         var validation = await validator.ValidateAsync(request);
         if (!validation.IsValid)

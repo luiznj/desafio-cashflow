@@ -8,13 +8,17 @@ public class AuthService(
     IUserRepository userRepository,
     IUserSessionRepository sessionRepository,
     ITokenService tokenService,
-    IConfiguration configuration) : IAuthService
+    IConfiguration configuration,
+    ILogger<AuthService> logger) : IAuthService
 {
     public async Task<AuthResponse> SignUpAsync(SignUpRequest request)
     {
         var existing = await userRepository.FindByEmailAsync(request.Email);
         if (existing is not null)
+        {
+            logger.LogWarning("Sign-up recusado: e-mail já cadastrado {Email}", request.Email);
             throw new DuplicateEmailException();
+        }
 
         var user = new User
         {
@@ -25,6 +29,7 @@ public class AuthService(
         };
 
         await userRepository.AddAsync(user);
+        logger.LogInformation("Novo usuário cadastrado {UserId}", user.Id);
         return await IssueTokensAsync(user);
     }
 
@@ -33,8 +38,12 @@ public class AuthService(
         var user = await userRepository.FindByEmailAsync(request.Email.ToLowerInvariant());
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            logger.LogWarning("Tentativa de sign-in com credenciais inválidas para {Email}", request.Email);
             throw new InvalidCredentialsException();
+        }
 
+        logger.LogInformation("Sign-in realizado {UserId}", user.Id);
         return await IssueTokensAsync(user);
     }
 
@@ -48,6 +57,7 @@ public class AuthService(
 
         await sessionRepository.RevokeAsync(session.Id);
 
+        logger.LogInformation("Refresh token rotacionado para {UserId}", user.Id);
         return await IssueTokensAsync(user);
     }
 
@@ -57,6 +67,7 @@ public class AuthService(
         if (session is null) return;
 
         await sessionRepository.RevokeAsync(session.Id);
+        logger.LogInformation("Sign-out: sessão {SessionId} revogada", session.Id);
     }
 
     private async Task<AuthResponse> IssueTokensAsync(User user)

@@ -17,6 +17,12 @@ builder.Services.AddMassTransit(x =>
             h.Username(builder.Configuration["RabbitMq:Username"]!);
             h.Password(builder.Configuration["RabbitMq:Password"]!);
         });
+
+        cfg.UseMessageRetry(r => r.Intervals(
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(15)));
+
         cfg.ConfigureEndpoints(ctx);
     });
 });
@@ -32,14 +38,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<CreateTransactionRequestValidator>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<CashFlow.Transaction.Db.Data.TransactionDbContext>("postgres");
+
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
+app.UseExceptionHandler(err => err.Run(async ctx =>
+{
+    var feature = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+    var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogError(feature?.Error, "Exceção não tratada");
+    ctx.Response.StatusCode = 500;
+    ctx.Response.ContentType = "application/json";
+    await ctx.Response.WriteAsJsonAsync(new { message = "Ocorreu um erro interno. Tente novamente mais tarde." });
+}));
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
 

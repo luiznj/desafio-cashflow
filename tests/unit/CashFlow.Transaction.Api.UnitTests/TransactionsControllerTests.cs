@@ -5,6 +5,7 @@ using CashFlow.Transaction.Api.Validators;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using System.Security.Claims;
 using Xunit;
@@ -19,7 +20,7 @@ public class TransactionsControllerTests
 
     private TransactionsController BuildController(string? idempotencyKey = "auto")
     {
-        var controller = new TransactionsController(_service, _validator);
+        var controller = new TransactionsController(_service, _validator, NullLogger<TransactionsController>.Instance);
         var claims = new[] { new Claim(ClaimTypes.NameIdentifier, _userId.ToString()) };
         var httpContext = new DefaultHttpContext
         {

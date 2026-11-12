@@ -5,6 +5,7 @@ using CashFlow.Transaction.Db.Models;
 using CashFlow.Transaction.Db.Repositories;
 using FluentAssertions;
 using MassTransit;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 using TransactionEntry = CashFlow.Transaction.Db.Models.Transaction;
@@ -19,7 +20,7 @@ public class TransactionServiceTests
 
     public TransactionServiceTests()
     {
-        _sut = new TransactionService(_repository, _publisher);
+        _sut = new TransactionService(_repository, _publisher, NullLogger<TransactionService>.Instance);
     }
 
     private static TransactionEntry MakeTransaction(Guid userId, decimal amount, TransactionType type, DateTime? occurredAt = null) =>

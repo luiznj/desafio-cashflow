@@ -4,6 +4,7 @@ using CashFlow.Identity.Db.Models;
 using CashFlow.Identity.Db.Repositories;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Xunit;
@@ -23,7 +24,7 @@ public class AuthServiceTests
         })
         .Build();
 
-    private AuthService CreateSut() => new(_userRepo, _sessionRepo, _tokenService, _config);
+    private AuthService CreateSut() => new(_userRepo, _sessionRepo, _tokenService, _config, NullLogger<AuthService>.Instance);
 
     private UserSession MakeSession() => new()
     {

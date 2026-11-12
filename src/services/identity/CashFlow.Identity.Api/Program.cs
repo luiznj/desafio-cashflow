@@ -30,14 +30,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<CashFlow.Identity.Db.Data.IdentityDbContext>("postgres");
+
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
+app.UseExceptionHandler(err => err.Run(async ctx =>
+{
+    var feature = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+    var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+    logger.LogError(feature?.Error, "Exceção não tratada");
+    ctx.Response.StatusCode = 500;
+    ctx.Response.ContentType = "application/json";
+    await ctx.Response.WriteAsJsonAsync(new { message = "Ocorreu um erro interno. Tente novamente mais tarde." });
+}));
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
 

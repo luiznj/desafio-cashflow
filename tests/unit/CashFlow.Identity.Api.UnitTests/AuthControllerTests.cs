@@ -5,6 +5,7 @@ using CashFlow.Identity.Api.Validators;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Xunit;
@@ -18,7 +19,7 @@ public class AuthControllerTests
 
     private AuthController CreateSut()
     {
-        var controller = new AuthController(_authService, _validator);
+        var controller = new AuthController(_authService, _validator, NullLogger<AuthController>.Instance);
         controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext()

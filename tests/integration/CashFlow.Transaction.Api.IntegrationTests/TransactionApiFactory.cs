@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Testcontainers.PostgreSql;
+using Xunit;
 
 namespace CashFlow.Transaction.Api.IntegrationTests;
 

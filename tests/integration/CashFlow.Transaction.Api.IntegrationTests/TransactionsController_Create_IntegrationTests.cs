@@ -224,13 +224,10 @@ public class TransactionsController_Create_IntegrationTests : IClassFixture<Tran
         await Task.Delay(300);
 
         // Count events matching this specific transactionId
-        var matchingEvents = new List<IPublishedMessage<TransactionCreatedEvent>>();
-        await foreach (var msg in harness.Published)
-        {
-            if (msg is IPublishedMessage<TransactionCreatedEvent> evt &&
-                evt.Context.Message.TransactionId == transactionId)
-                matchingEvents.Add(evt);
-        }
+        var matchingEvents = harness.Published
+            .Select<TransactionCreatedEvent>()
+            .Where(evt => evt.Context.Message.TransactionId == transactionId)
+            .ToList();
         matchingEvents.Should().HaveCount(1);
     }
 }

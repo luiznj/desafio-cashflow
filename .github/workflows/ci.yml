@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cashflow
+          POSTGRES_USER: cashflow
+          POSTGRES_PASSWORD: cashflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore src/CashFlow.slnx
+
+      - name: Build
+        run: dotnet build src/CashFlow.slnx --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test tests/unit/ --no-build --configuration Release --logger "console;verbosity=normal"
+
+      - name: Run integration tests
+        run: dotnet test tests/integration/ --no-build --configuration Release --logger "console;verbosity=normal"
+        env:
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=cashflow;Username=cashflow;Password=cashflow"

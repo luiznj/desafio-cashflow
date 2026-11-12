@@ -3,6 +3,7 @@ using CashFlow.Consolidation.Db.Repositories;
 using CashFlow.Shared.Messaging;
 using FluentAssertions;
 using MassTransit;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -15,7 +16,7 @@ public class TransactionCreatedConsumerTests
 
     public TransactionCreatedConsumerTests()
     {
-        _sut = new TransactionCreatedConsumer(_repository);
+        _sut = new TransactionCreatedConsumer(_repository, NullLogger<TransactionCreatedConsumer>.Instance);
     }
 
     private static ConsumeContext<TransactionCreatedEvent> BuildContext(TransactionCreatedEvent evt)

@@ -168,3 +168,64 @@ C4Component
   Rel(cons_api, cons_db, "Chama", "interface de repositório")
   Rel(cons_db, pg_consolidation, "Lê / Escreve", "EF Core")
 ```
+
+---
+
+## Requisitos Não-Funcionais
+
+### Disponibilidade do Serviço de Lançamentos
+
+**Requisito:** O Transaction Service não deve ficar indisponível se o Consolidation Service cair.
+
+**Como é atendido:**
+
+Os dois serviços são completamente desacoplados via RabbitMQ. O Transaction Service apenas *publica* o evento `TransactionCreatedEvent` na fila — ele não tem dependência em tempo de execução com o Consolidation. Se o Consolidation cair, os eventos se acumulam na fila do RabbitMQ. Quando o Consolidation voltar, ele drena a fila automaticamente com retry (1s, 5s, 15s) e idempotência via tabela `ProcessedTransactions` garante que não há dupla contagem.
+
+```
+Transaction Service → RabbitMQ queue ←→ Consolidation Service
+     (sempre ativo)       (buffer)          (pode cair e voltar)
+```
+
+### Throughput: 50 req/s com ≤ 5% de perda
+
+**Requisito:** O Consolidation Service recebe 50 req/s em picos com no máximo 5% de perda.
+
+**Como é atendido:**
+
+| Camada | Estratégia |
+|--------|-----------|
+| **Fila RabbitMQ** | Absorve picos: 50 eventos/s entram na fila sem perda, independente da capacidade de processamento instantânea |
+| **Consumer MassTransit** | Processa de forma assíncrona; configurável via `PrefetchCount` para paralelismo |
+| **Upsert idempotente** | `ApplyTransactionAsync` usa upsert — sem locks de longa duração, alta throughput |
+| **Retry automático** | 3 tentativas (1s, 5s, 15s) em falhas transientes — reduz perda por falha temporária |
+| **Escalonamento horizontal** | Múltiplas instâncias do Consolidation Service consomem a mesma fila em paralelo |
+
+**Connection pooling (padrões Npgsql):**
+- Pool padrão do Npgsql: 100 conexões por connection string
+- Para maior throughput: configurar `MaxPoolSize=200` na connection string
+
+**Estimativa de capacidade por instância:**
+- Upsert PostgreSQL: ~2ms por operação
+- Uma instância com `PrefetchCount=10`: ~500 ops/s teórico
+- Com 50 req/s de entrada: margem de ~10x, dentro do SLA
+
+### Resiliência
+
+| Mecanismo | Implementação |
+|-----------|--------------|
+| **Retry de publicação** | MassTransit `UseMessageRetry` no Transaction (1s, 5s, 15s) |
+| **Retry de consumo** | MassTransit `UseMessageRetry` no Consolidation (1s, 5s, 15s) |
+| **Idempotência** | Tabela `ProcessedTransactions` previne dupla contagem |
+| **Health checks** | `/health` em todos os serviços (verifica PostgreSQL via EF Core) |
+| **Rate limiting** | Gateway: 60 req/min por IP (proteção contra brute-force e DDoS) |
+
+### Segurança
+
+| Mecanismo | Implementação |
+|-----------|--------------|
+| **JWT RS256** | Identity assina com chave privada RSA; demais serviços validam via JWKS |
+| **Password hashing** | BCrypt com salt automático |
+| **Refresh tokens opacos** | Strings aleatórias armazenadas com hash no banco |
+| **Isolamento de dados** | UserId extraído apenas do JWT — nunca de parâmetros da request |
+| **Rate limiting** | Gateway limita 60 req/min por IP |
+| **Erro opaco** | Sign-in retorna mensagem genérica (evita enumeração de e-mails) |
