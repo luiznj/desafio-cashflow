@@ -103,8 +103,10 @@ public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifet
 
         var host = base.CreateHost(builder);
 
+        // The host already started all IHostedServices (including OutboxDeliveryService and
+        // MassTransit's bus). Calling _harness.Start() here would trigger a second StartAsync
+        // on those services, causing two concurrent outbox delivery loops and double-publishing.
         _harness = host.Services.GetRequiredService<ITestHarness>();
-        _harness.Start().GetAwaiter().GetResult();
 
         return host;
     }
