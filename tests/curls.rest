@@ -1,0 +1,47 @@
+@userEmail = teste2@teste.com
+@userPass = Abcd#1234
+
+# @name signup
+curl -X POST http://localhost:5000/api/v1/auth/sign-up \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "{{userEmail}}",
+    "password": "{{userPass}}"
+  }'
+###
+
+# @name signin
+curl -X POST http://localhost:5000/api/v1/auth/sign-in \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "{{userEmail}}",
+    "password": "{{userPass}}"
+  }'
+
+@accessToken = {{signin.response.body.$.accessToken}}
+###
+
+# @name createTransaction
+@idempotencyKey = {{$guid}}
+
+@transactionType = Debit 
+@transactionValue = 10.50
+
+curl -X POST http://localhost:5000/api/v1/transactions \
+  -H "Authorization: Bearer {{accessToken}}" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: {{idempotencyKey}}" \
+  -d '{
+    "type": "{{transactionType}}",
+    "amount": {{transactionValue}}
+  }'
+###
+
+# @name balance
+@balanceDate = {{$datetime 'YYYY-MM-DD'}}
+
+curl "http://localhost:5000/api/v1/balances?date={{balanceDate}}" \
+  -H "Authorization: Bearer {{accessToken}}"
+###
+
+
