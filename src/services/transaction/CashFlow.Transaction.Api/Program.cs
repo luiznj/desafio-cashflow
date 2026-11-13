@@ -2,10 +2,13 @@ using CashFlow.Transaction.Api.Services;
 using CashFlow.Transaction.Db.Data;
 using CashFlow.Transaction.Api.Validators;
 using CashFlow.Transaction.Db.Extensions;
+using CashFlow.Shared.Observability;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddObservability("cashflow-transaction");
 
 builder.Services.AddTransactionDb(builder.Configuration.GetConnectionString("Default")!);
 
@@ -60,6 +63,7 @@ app.UseExceptionHandler(err => err.Run(async ctx =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapPrometheusScrapingEndpoint();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
