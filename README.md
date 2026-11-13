@@ -238,3 +238,47 @@ dotnet build src/CashFlow.slnx
 ```
 
 Deve retornar **0 erros**.
+
+---
+
+## Observabilidade
+
+A stack de observabilidade (Prometheus + Loki + Tempo + Grafana) é iniciada junto com a infraestrutura:
+
+```bash
+docker compose up -d
+```
+
+| Serviço | URL | Descrição |
+|---------|-----|-----------|
+| **Grafana** | http://localhost:3001 | Dashboards (acesso anônimo, sem login) |
+| **Prometheus** | http://localhost:9090 | Métricas coletadas dos serviços |
+| **Loki** | http://localhost:3100 | Logs via OTLP |
+| **Tempo** | http://localhost:3200 | Traces distribuídos via OTLP |
+
+O Grafana abre com o dashboard **"CashFlow — Visão Geral"** pré-configurado, mostrando:
+- Requisições por segundo por serviço
+- Latência p95 e p99
+- Taxa de erro HTTP (4xx/5xx)
+- Painel de logs com link direto para o trace correspondente
+
+Cada serviço exporta automaticamente:
+- **Métricas** no endpoint `/metrics` (scraping pelo Prometheus)
+- **Traces** via OTLP HTTP para o Tempo (`:4318`)
+- **Logs** via OTLP HTTP para o Loki (`:3100/otlp`)
+
+---
+
+## Teste de Stress
+
+O projeto inclui um teste de stress com [k6](https://k6.io) que valida o requisito de 50 req/s com ≤ 5% de perda.
+
+Consulte [tests/stress/README.md](./tests/stress/README.md) para instruções completas.
+
+```bash
+# Instalar k6 (macOS)
+brew install k6
+
+# Executar (com stack e serviços rodando)
+k6 run tests/stress/cashflow-stress.js
+```

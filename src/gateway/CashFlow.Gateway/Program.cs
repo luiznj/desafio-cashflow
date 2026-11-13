@@ -1,9 +1,12 @@
+using CashFlow.Shared.Observability;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddObservability("cashflow-gateway");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -77,6 +80,7 @@ app.UseExceptionHandler(err => err.Run(async ctx =>
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.MapPrometheusScrapingEndpoint();
 app.MapReverseProxy();
 app.MapHealthChecks("/health");
 

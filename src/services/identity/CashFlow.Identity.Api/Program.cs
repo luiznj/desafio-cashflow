@@ -1,10 +1,13 @@
 using CashFlow.Identity.Api.Services;
 using CashFlow.Identity.Api.Validators;
 using CashFlow.Identity.Db.Extensions;
+using CashFlow.Shared.Observability;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddObservability("cashflow-identity");
 
 builder.Services.AddIdentityDb(builder.Configuration.GetConnectionString("Default")!);
 
@@ -50,6 +53,7 @@ app.UseExceptionHandler(err => err.Run(async ctx =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapPrometheusScrapingEndpoint();
 app.MapControllers();
 app.MapHealthChecks("/health");
 

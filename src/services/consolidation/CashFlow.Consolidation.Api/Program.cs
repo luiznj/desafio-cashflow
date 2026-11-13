@@ -1,10 +1,13 @@
 using CashFlow.Consolidation.Api.Messaging;
 using CashFlow.Consolidation.Api.Services;
 using CashFlow.Consolidation.Db.Extensions;
+using CashFlow.Shared.Observability;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddObservability("cashflow-consolidation");
 
 builder.Services.AddConsolidationDb(builder.Configuration.GetConnectionString("Default")!);
 
@@ -59,6 +62,7 @@ app.UseExceptionHandler(err => err.Run(async ctx =>
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapPrometheusScrapingEndpoint();
 app.MapControllers();
 app.MapHealthChecks("/health");
 

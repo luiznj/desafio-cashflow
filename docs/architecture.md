@@ -171,6 +171,27 @@ C4Component
 
 ---
 
+## Observabilidade
+
+A stack de observabilidade utiliza **OpenTelemetry** como camada de instrumentação, exportando os três sinais para backends dedicados:
+
+| Sinal | Exportador | Backend | Porta |
+|-------|-----------|---------|-------|
+| Métricas | Prometheus scraping (`/metrics`) | Prometheus | 9090 |
+| Traces | OTLP HTTP | Tempo | 4318 |
+| Logs | OTLP HTTP | Loki | 3100 |
+
+Todos os serviços são instrumentados automaticamente via `AddObservability(serviceName)` em `CashFlow.Shared`:
+- **HTTP**: duração de requests, status codes (via `AddAspNetCoreInstrumentation`)
+- **HTTP client**: chamadas externas (via `AddHttpClientInstrumentation`)
+- **EF Core**: duração de queries SQL (via `AddEntityFrameworkCoreInstrumentation`)
+- **MassTransit**: publish/consume de mensagens (via `ActivitySource "MassTransit"`)
+- **Runtime**: GC, threads, memória (via `AddRuntimeInstrumentation`)
+
+O Grafana (porta 3001) vem com datasources e dashboard pré-provisionados, incluindo correlação log → trace pelo `TraceId`.
+
+---
+
 ## Requisitos Não-Funcionais
 
 ### Disponibilidade do Serviço de Lançamentos
@@ -217,7 +238,7 @@ Transaction Service → RabbitMQ queue ←→ Consolidation Service
 | **Retry de consumo** | MassTransit `UseMessageRetry` no Consolidation (1s, 5s, 15s) |
 | **Idempotência** | Tabela `ProcessedTransactions` previne dupla contagem |
 | **Health checks** | `/health` em todos os serviços (verifica PostgreSQL via EF Core) |
-| **Rate limiting** | Gateway: 60 req/min por IP (proteção contra brute-force e DDoS) |
+| **Rate limiting** | Gateway: rotas `/auth` limitadas a 20 req/min por IP (brute-force); rotas de API limitadas a 6000 req/min por `userId` do JWT |
 
 ### Segurança
 
@@ -227,5 +248,5 @@ Transaction Service → RabbitMQ queue ←→ Consolidation Service
 | **Password hashing** | BCrypt com salt automático |
 | **Refresh tokens opacos** | Strings aleatórias armazenadas com hash no banco |
 | **Isolamento de dados** | UserId extraído apenas do JWT — nunca de parâmetros da request |
-| **Rate limiting** | Gateway limita 60 req/min por IP |
+| **Rate limiting** | Gateway limita rotas de auth a 20 req/min por IP; rotas autenticadas a 6000 req/min por `userId` |
 | **Erro opaco** | Sign-in retorna mensagem genérica (evita enumeração de e-mails) |
