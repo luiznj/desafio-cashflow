@@ -92,13 +92,16 @@ public class TransactionApiFactory : WebApplicationFactory<Program>, IAsyncLifet
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        var host = base.CreateHost(builder);
-
-        using (var scope = host.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<TransactionDbContext>();
+        // Apply migration before the host starts so OutboxDeliveryService
+        // does not race against a database that has no tables yet
+        var connectionString = _envConnectionString ?? _postgres!.GetConnectionString();
+        var dbOptions = new DbContextOptionsBuilder<TransactionDbContext>()
+            .UseNpgsql(connectionString)
+            .Options;
+        using (var db = new TransactionDbContext(dbOptions))
             db.Database.Migrate();
-        }
+
+        var host = base.CreateHost(builder);
 
         _harness = host.Services.GetRequiredService<ITestHarness>();
         _harness.Start().GetAwaiter().GetResult();
