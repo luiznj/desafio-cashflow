@@ -14,10 +14,15 @@ Verificar se tudo está rodando:
 docker compose ps
 ```
 
-Esperado:
+Esperado (nomes podem variar conforme o diretório do projeto):
 ```
-cashflow-postgres    running ✓
-rabbitmq             running ✓
+NAME                             STATUS
+desafio-cashflow-postgres-1      running
+desafio-cashflow-rabbitmq-1      running
+desafio-cashflow-prometheus-1    running
+desafio-cashflow-loki-1          running
+desafio-cashflow-tempo-1         running
+desafio-cashflow-grafana-1       running
 ```
 
 ### 1.2 Aplicar migrations
